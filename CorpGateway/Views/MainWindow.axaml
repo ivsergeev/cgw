@@ -274,6 +274,11 @@
                      Classes="field"
                      Watermark="https://internal.corp/api/employees/{id}"/>
 
+            <TextBlock Text="Origin URL (необяз.)" Classes="label"/>
+            <TextBox Text="{Binding EditSkill.FetchOrigin}"
+                     Classes="field"
+                     Watermark="https://app.corp.com — откуда выполнять запрос (если отличается от URL)"/>
+
             <TextBlock Text="HTTP метод" Classes="label"/>
             <ComboBox ItemsSource="{Binding EditSkill.HttpMethods}"
                       SelectedItem="{Binding EditSkill.HttpMethod}"
@@ -294,6 +299,14 @@
               <TextBlock Text="Если пусто — параметры отправляются как плоский JSON"
                          FontSize="10" Foreground="#AAA" Margin="0,-6,0,0"/>
             </StackPanel>
+
+            <!-- Фильтр ответа -->
+            <TextBlock Text="Фильтр полей ответа (необяз.)" Classes="label"/>
+            <TextBox Text="{Binding EditSkill.ResponseFilter}"
+                     Classes="field"
+                     Watermark="key, fields.summary, fields.status.name, fields.assignee.displayName"/>
+            <TextBlock Text="Через запятую, dot-notation. Если пусто — полный ответ"
+                       FontSize="10" Foreground="#AAA" Margin="0,-6,0,6"/>
 
             <!-- Кэширование -->
             <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,0,0,10">

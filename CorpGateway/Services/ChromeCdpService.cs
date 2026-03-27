@@ -126,7 +126,7 @@ public class ChromeCdpService
     /// Execute a fetch() inside the browser with automatic auth handling.
     /// </summary>
     public async Task<CdpFetchResult> ExecuteFetchAsync(string url, string method, string? bodyJson,
-        Dictionary<string, string>? headers, int timeoutSeconds = 30)
+        Dictionary<string, string>? headers, int timeoutSeconds = 30, string? originOverride = null)
     {
         if (!IsConnected || _ws == null)
             return new CdpFetchResult { Error = "CDP not connected" };
@@ -134,7 +134,9 @@ public class ChromeCdpService
         try
         {
             var uri = new Uri(url);
-            var origin = $"{uri.Scheme}://{uri.Authority}";
+            var origin = !string.IsNullOrEmpty(originOverride)
+                ? originOverride
+                : $"{uri.Scheme}://{uri.Authority}";
 
             var session = await GetOrCreateOriginSessionAsync(origin);
             if (session == null)
@@ -518,7 +520,7 @@ public class ChromeCdpService
 
     private async Task ReceiveLoopAsync(CancellationToken ct)
     {
-        var buffer = new byte[256 * 1024];
+        var buffer = new byte[1024 * 1024]; // 1 MB buffer for large CDP messages
         var sb = new StringBuilder();
 
         try
@@ -553,9 +555,12 @@ public class ChromeCdpService
                 }
                 else
                 {
+                    var eventMethod = "";
+                    if (json.TryGetProperty("method", out var m))
+                        eventMethod = m.GetString() ?? "";
+
                     // Detect tab closed externally
-                    if (json.TryGetProperty("method", out var m) &&
-                        m.GetString() == "Target.targetDestroyed" &&
+                    if (eventMethod == "Target.targetDestroyed" &&
                         json.TryGetProperty("params", out var p) &&
                         p.TryGetProperty("targetId", out var tid))
                     {

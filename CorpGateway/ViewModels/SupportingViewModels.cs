@@ -85,7 +85,8 @@ public class EditSkillViewModel : ReactiveObject
     private bool _cacheEnabled = false;
     private int _cacheTtl = 60;
     private string _bodyTemplate = "";
-
+    private string _fetchOrigin = "";
+    private string _responseFilter = "";
     public Guid Id
     {
         get => _id;
@@ -110,7 +111,8 @@ public class EditSkillViewModel : ReactiveObject
     public bool CacheEnabled { get => _cacheEnabled; set => this.RaiseAndSetIfChanged(ref _cacheEnabled, value); }
     public int CacheTtl { get => _cacheTtl; set => this.RaiseAndSetIfChanged(ref _cacheTtl, value); }
     public string BodyTemplate { get => _bodyTemplate; set => this.RaiseAndSetIfChanged(ref _bodyTemplate, value); }
-
+    public string FetchOrigin { get => _fetchOrigin; set => this.RaiseAndSetIfChanged(ref _fetchOrigin, value); }
+    public string ResponseFilter { get => _responseFilter; set => this.RaiseAndSetIfChanged(ref _responseFilter, value); }
     public bool HasBody => HttpMethod is "POST" or "PUT" or "PATCH";
 
     public ObservableCollection<ParameterViewModel> Parameters { get; } = new();
@@ -163,7 +165,7 @@ public class EditSkillViewModel : ReactiveObject
     {
         Id = Guid.Empty; GroupId = groupId; Name = ""; Description = "";
         Url = ""; HttpMethod = "GET"; CacheEnabled = false; CacheTtl = 60;
-        BodyTemplate = "";
+        BodyTemplate = ""; FetchOrigin = ""; ResponseFilter = "";
         Parameters.Clear();
     }
 
@@ -172,6 +174,7 @@ public class EditSkillViewModel : ReactiveObject
         Id = s.Id; GroupId = s.GroupId; Name = s.Name; Description = s.Description;
         Url = s.Url; HttpMethod = s.HttpMethod; CacheEnabled = s.CacheEnabled;
         CacheTtl = s.CacheTtlSeconds; BodyTemplate = s.BodyTemplate;
+        FetchOrigin = s.FetchOrigin; ResponseFilter = s.ResponseFilter;
         Parameters.Clear();
         foreach (var p in s.Parameters) Parameters.Add(ParameterViewModel.FromModel(p));
     }
@@ -184,6 +187,8 @@ public class EditSkillViewModel : ReactiveObject
             GroupId = GroupId, Name = Name.Trim(), Description = Description.Trim(),
             Url = Url.Trim(), HttpMethod = HttpMethod,
             BodyTemplate = BodyTemplate?.Trim() ?? "",
+            FetchOrigin = FetchOrigin?.Trim() ?? "",
+            ResponseFilter = ResponseFilter?.Trim() ?? "",
             CacheEnabled = CacheEnabled, CacheTtlSeconds = CacheTtl
         };
         foreach (var p in Parameters) skill.Parameters.Add(p.ToModel());
@@ -235,6 +240,17 @@ public class TestPanelViewModel : ReactiveObject
     private async Task RunTestAsync()
     {
         if (_skill == null) return;
+
+        // Validate required parameters
+        foreach (var p in ParamValues)
+        {
+            if (p.Required && string.IsNullOrWhiteSpace(p.Value))
+            {
+                ResponseText = $"Ошибка: обязательный параметр \"{p.Name}\" не заполнен";
+                return;
+            }
+        }
+
         IsTesting = true;
         ResponseText = "Вызов...";
         try
@@ -243,7 +259,11 @@ public class TestPanelViewModel : ReactiveObject
             http.DefaultRequestHeaders.Add("Authorization", $"Bearer {_config.ApiToken}");
 
             var paramDict = new System.Collections.Generic.Dictionary<string, string>();
-            foreach (var p in ParamValues) paramDict[p.Name] = p.Value;
+            foreach (var p in ParamValues)
+            {
+                if (!string.IsNullOrWhiteSpace(p.Value))
+                    paramDict[p.Name] = p.Value;
+            }
 
             var body = new { skill = _skill.Name, parameters = paramDict };
             var resp = await http.PostAsync(

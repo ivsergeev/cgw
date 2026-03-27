@@ -224,12 +224,17 @@ public class LocalApiServer : IDisposable
             headers["Content-Type"] = "application/json";
 
         // Execute via browser CDP fetch()
-        var fetchResult = await _cdpService!.ExecuteFetchAsync(url, skill.HttpMethod, bodyJson, headers);
+        var originOverride = string.IsNullOrWhiteSpace(skill.FetchOrigin) ? null : skill.FetchOrigin.TrimEnd('/');
+        var fetchResult = await _cdpService!.ExecuteFetchAsync(url, skill.HttpMethod, bodyJson, headers, originOverride: originOverride);
 
         if (fetchResult.Error != null)
             return (502, new { error = $"Browser fetch error: {fetchResult.Error}" });
 
         var respBody = fetchResult.Body;
+
+        // Apply response filter if configured
+        if (!string.IsNullOrWhiteSpace(skill.ResponseFilter) && fetchResult.IsSuccess)
+            respBody = JsonFilterHelper.ApplyFilter(respBody, skill.ResponseFilter);
 
         // Cache successful responses
         if (skill.CacheEnabled && fetchResult.IsSuccess)

@@ -40,6 +40,21 @@ public class Skill
     /// </summary>
     public string BodyTemplate { get; set; } = "";
 
+    /// <summary>
+    /// Origin (scheme + host) from which to execute fetch().
+    /// Use when the API endpoint is on a different domain than the SPA that holds the auth session.
+    /// If empty, the origin is extracted from the Url automatically.
+    /// </summary>
+    public string FetchOrigin { get; set; } = "";
+
+    /// <summary>
+    /// Comma-separated list of dot-notation paths to keep in the response.
+    /// Example: "key, fields.summary, fields.status.name, fields.assignee.displayName"
+    /// If empty, the full response is returned.
+    /// Supports array traversal: "fields.components.name" extracts name from each element.
+    /// </summary>
+    public string ResponseFilter { get; set; } = "";
+
     public bool CacheEnabled { get; set; } = false;
     public int CacheTtlSeconds { get; set; } = 60;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

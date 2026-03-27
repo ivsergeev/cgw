@@ -102,7 +102,12 @@ public class MainViewModel : ReactiveObject
     public int CdpPort
     {
         get => _cdpPort;
-        set { this.RaiseAndSetIfChanged(ref _cdpPort, value); _config.CdpPort = value; }
+        set
+        {
+            if (value < 1 || value > 65535) return;
+            this.RaiseAndSetIfChanged(ref _cdpPort, value);
+            _config.CdpPort = value;
+        }
     }
 
 
@@ -115,7 +120,7 @@ public class MainViewModel : ReactiveObject
             _config.StartWithSystem = value;
             if (OperatingSystem.IsWindows())
                 AutoStartService.SetAutoStart(value);
-            _ = _config.SaveAsync();
+            Task.Run(async () => { try { await _config.SaveAsync(); } catch { } });
         }
     }
 
@@ -278,8 +283,9 @@ public class MainViewModel : ReactiveObject
     // ── Async operations ──────────────────────────────────────────────────────
     private async Task SaveGroupAsync()
     {
-        if (string.IsNullOrWhiteSpace(EditGroup.Name)) return;
         ErrorMessage = "";
+        if (string.IsNullOrWhiteSpace(EditGroup.Name))
+        { ErrorMessage = "Укажите название группы"; return; }
 
         try
         {
@@ -313,6 +319,35 @@ public class MainViewModel : ReactiveObject
     private async Task SaveSkillAsync()
     {
         ErrorMessage = "";
+
+        // Validate required fields
+        if (string.IsNullOrWhiteSpace(EditSkill.Name))
+        { ErrorMessage = "Укажите название скила"; return; }
+
+        if (string.IsNullOrWhiteSpace(EditSkill.Url))
+        { ErrorMessage = "Укажите URL"; return; }
+
+        if (!Uri.TryCreate(EditSkill.Url.Trim(), UriKind.Absolute, out _))
+        { ErrorMessage = "URL имеет некорректный формат"; return; }
+
+        // Validate BodyTemplate is valid JSON (if provided)
+        var bodyTpl = EditSkill.BodyTemplate?.Trim() ?? "";
+        if (!string.IsNullOrEmpty(bodyTpl))
+        {
+            try { System.Text.Json.JsonDocument.Parse(bodyTpl); }
+            catch { ErrorMessage = "Body Template не является валидным JSON"; return; }
+        }
+
+        // Validate parameter names: non-empty and unique
+        var paramNames = new System.Collections.Generic.HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var p in EditSkill.Parameters)
+        {
+            if (string.IsNullOrWhiteSpace(p.Name))
+            { ErrorMessage = "Все параметры должны иметь название"; return; }
+            if (!paramNames.Add(p.Name.Trim()))
+            { ErrorMessage = $"Дублирующееся имя параметра: {p.Name.Trim()}"; return; }
+        }
+
         var isNew = EditSkill.Id == Guid.Empty;
         var skill = EditSkill.ToModel();
         try
