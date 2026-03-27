@@ -257,6 +257,7 @@ public class TestPanelViewModel : ReactiveObject
         catch (Exception ex) { ResponseText = $"Ошибка: {ex.Message}"; }
         finally { IsTesting = false; }
     }
+
 }
 
 public class TestParamViewModel : ReactiveObject

@@ -105,6 +105,7 @@ public class MainViewModel : ReactiveObject
         set { this.RaiseAndSetIfChanged(ref _cdpPort, value); _config.CdpPort = value; }
     }
 
+
     public bool StartWithSystem
     {
         get => _startWithSystem;

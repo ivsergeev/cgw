@@ -413,7 +413,7 @@
             <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,8,0,12">
               <Button Content="▶ Запустить" Classes="primary"
                       Command="{Binding TestPanel.RunTestCommand}"/>
-              <Button Content="Назад" Classes="ghost" Command="{Binding CancelEditCommand}"/>
+<Button Content="Назад" Classes="ghost" Command="{Binding CancelEditCommand}"/>
             </StackPanel>
 
             <TextBlock Text="Ответ" Classes="label"/>

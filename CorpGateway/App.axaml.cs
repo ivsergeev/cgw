@@ -32,7 +32,7 @@ public class App : Application
             // Bootstrap services
             _config = await AppConfig.LoadAsync();
             _repo = new SkillsRepository();
-            _cdpService = new ChromeCdpService { AuthTtlSeconds = _config.CdpAuthTtlSeconds };
+            _cdpService = new ChromeCdpService();
             _server = new LocalApiServer(_repo, _cdpService);
 
             await _repo.LoadAsync();

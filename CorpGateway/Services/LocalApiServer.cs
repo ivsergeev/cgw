@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
-using System.Net.Http;
 using System.Text;
 using System.Text.Json;
 using System.Threading;
@@ -15,13 +14,13 @@ namespace CorpGateway.Services;
 /// <summary>
 /// Lightweight HTTP server on localhost that exposes skill execution to the CLI agent.
 /// Authentication: static bearer token loaded from config.
+/// Skill requests are proxied through the browser via CDP fetch() — the browser handles all auth.
 /// </summary>
 public class LocalApiServer : IDisposable
 {
     private readonly HttpListener _listener = new();
     private readonly SkillsRepository _repo;
     private readonly ChromeCdpService? _cdpService;
-    private readonly HttpClient _http = new();
     private readonly Dictionary<string, (string Json, DateTime ExpiresAt)> _cache = new();
     private CancellationTokenSource? _cts;
     private string _bearerToken = "";
@@ -132,7 +131,8 @@ public class LocalApiServer : IDisposable
             // GET /health
             if (req.HttpMethod == "GET" && path == "/health")
             {
-                await WriteJsonAsync(resp, 200, new { status = "ok", skills = _repo.GetSkills().Count });
+                var cdpStatus = _cdpService?.IsConnected == true ? "connected" : "disconnected";
+                await WriteJsonAsync(resp, 200, new { status = "ok", skills = _repo.GetSkills().Count, cdp = cdpStatus });
                 return;
             }
 
@@ -151,6 +151,10 @@ public class LocalApiServer : IDisposable
 
         if (skill == null)
             return (404, new { error = $"Skill '{req.Skill}' not found" });
+
+        // Validate CDP connection
+        if (_cdpService?.IsConnected != true)
+            return (503, new { error = "CDP not connected. Connect to Chrome in the Gateway UI." });
 
         // Build URL with path and query params
         var url = skill.Url;
@@ -184,34 +188,16 @@ public class LocalApiServer : IDisposable
                 return (200, JsonSerializer.Deserialize<object>(cached.Json)!);
         }
 
-        // Build HTTP request
-        var httpReq = new HttpRequestMessage
+        // Build body for POST/PUT/PATCH
+        string? bodyJson = null;
+        if (skill.HttpMethod != "GET" && skill.HttpMethod != "DELETE")
         {
-            RequestUri = new Uri(url),
-            Method = new HttpMethod(skill.HttpMethod)
-        };
-
-        if (skill.HttpMethod == "GET" || skill.HttpMethod == "DELETE")
-        {
-            // GET/DELETE: remaining params go as query string
-            if (remainingParams.Count > 0)
-            {
-                var query = string.Join("&", remainingParams.Select(kv =>
-                    $"{Uri.EscapeDataString(kv.Key)}={Uri.EscapeDataString(kv.Value)}"));
-                httpReq.RequestUri = new Uri($"{url}?{query}");
-            }
-        }
-        else
-        {
-            // POST/PUT/PATCH: use body template or flat JSON
-            string bodyJson;
             if (!string.IsNullOrWhiteSpace(skill.BodyTemplate))
             {
-                // Substitute {{param}} placeholders in template with JSON-escaped values
                 bodyJson = skill.BodyTemplate;
                 foreach (var kv in remainingParams)
                 {
-                    var escaped = JsonSerializer.Serialize(kv.Value)[1..^1]; // strip surrounding quotes
+                    var escaped = JsonSerializer.Serialize(kv.Value)[1..^1];
                     bodyJson = bodyJson.Replace($"{{{{{kv.Key}}}}}", escaped);
                 }
             }
@@ -219,51 +205,44 @@ public class LocalApiServer : IDisposable
             {
                 bodyJson = JsonSerializer.Serialize(remainingParams);
             }
-            httpReq.Content = new StringContent(bodyJson, Encoding.UTF8, "application/json");
         }
 
-        foreach (var h in skill.Headers)
-            httpReq.Headers.TryAddWithoutValidation(h.Key, h.Value);
-
-        // Merge browser auth (cookies + headers) from CDP if connected
-        if (_cdpService?.IsConnected == true && httpReq.RequestUri != null)
+        // Build query string for GET/DELETE
+        if (skill.HttpMethod == "GET" || skill.HttpMethod == "DELETE")
         {
-            var domain = httpReq.RequestUri.Host;
-            var authData = await _cdpService.GetAuthForDomainAsync(domain);
-            if (authData != null)
+            if (remainingParams.Count > 0)
             {
-                // Merge cookies
-                if (authData.Cookies.Count > 0)
-                {
-                    var cdpCookies = string.Join("; ",
-                        authData.Cookies.Select(c => $"{c.Key}={c.Value}"));
-                    if (httpReq.Headers.TryGetValues("Cookie", out var existing))
-                    {
-                        cdpCookies = string.Join("; ", existing) + "; " + cdpCookies;
-                        httpReq.Headers.Remove("Cookie");
-                    }
-                    httpReq.Headers.TryAddWithoutValidation("Cookie", cdpCookies);
-                }
-
-                // Merge auth headers (skill-defined take precedence)
-                foreach (var h in authData.AuthHeaders)
-                {
-                    if (!skill.Headers.ContainsKey(h.Key))
-                        httpReq.Headers.TryAddWithoutValidation(h.Key, h.Value);
-                }
+                var query = string.Join("&", remainingParams.Select(kv =>
+                    $"{Uri.EscapeDataString(kv.Key)}={Uri.EscapeDataString(kv.Value)}"));
+                url = $"{url}?{query}";
             }
         }
 
-        var httpResp = await _http.SendAsync(httpReq);
-        var respBody = await httpResp.Content.ReadAsStringAsync();
+        // Build headers (skill-defined + Content-Type for body requests)
+        var headers = new Dictionary<string, string>(skill.Headers);
+        if (bodyJson != null && !headers.ContainsKey("Content-Type"))
+            headers["Content-Type"] = "application/json";
 
-        if (skill.CacheEnabled && httpResp.IsSuccessStatusCode)
+        // Execute via browser CDP fetch()
+        var fetchResult = await _cdpService!.ExecuteFetchAsync(url, skill.HttpMethod, bodyJson, headers);
+
+        if (fetchResult.Error != null)
+            return (502, new { error = $"Browser fetch error: {fetchResult.Error}" });
+
+        var respBody = fetchResult.Body;
+
+        // Cache successful responses
+        if (skill.CacheEnabled && fetchResult.IsSuccess)
         {
             var cacheKey = $"{skill.Id}:{JsonSerializer.Serialize(parameters)}";
             _cache[cacheKey] = (respBody, DateTime.UtcNow.AddSeconds(skill.CacheTtlSeconds));
         }
 
-        var statusCode = (int)httpResp.StatusCode;
+        // Ensure valid HTTP status code (must be 3 digits: 100-599)
+        var statusCode = fetchResult.StatusCode;
+        if (statusCode < 100 || statusCode > 599)
+            statusCode = 502;
+
         try
         {
             var parsed = JsonSerializer.Deserialize<object>(respBody);
@@ -292,7 +271,6 @@ public class LocalApiServer : IDisposable
     public void Dispose()
     {
         Stop();
-        _http.Dispose();
     }
 }
 
