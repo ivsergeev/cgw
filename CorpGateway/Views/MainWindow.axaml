@@ -345,11 +345,11 @@
                       <ComboBox Grid.Column="2" Grid.Row="0"
                                 SelectedItem="{Binding Type}"
                                 HorizontalAlignment="Stretch">
-                        <x:String>String</x:String>
-                        <x:String>Integer</x:String>
-                        <x:String>Float</x:String>
-                        <x:String>Boolean</x:String>
-                        <x:String>Date</x:String>
+                        <models:ParameterType>String</models:ParameterType>
+                        <models:ParameterType>Integer</models:ParameterType>
+                        <models:ParameterType>Float</models:ParameterType>
+                        <models:ParameterType>Boolean</models:ParameterType>
+                        <models:ParameterType>Date</models:ParameterType>
                       </ComboBox>
 
                       <CheckBox Grid.Column="4" Grid.Row="0"

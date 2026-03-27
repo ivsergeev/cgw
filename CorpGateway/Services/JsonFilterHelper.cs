@@ -40,26 +40,22 @@ public static class JsonFilterHelper
     private static JsonNode? FilterNode(JsonNode source, string[] paths)
     {
         if (source is JsonArray arr)
-            return FilterArray(arr, paths);
+        {
+            var result = new JsonArray();
+            foreach (var item in arr)
+            {
+                if (item == null) continue;
+                var filtered = FilterNode(item, paths);
+                if (filtered != null)
+                    result.Add(filtered);
+            }
+            return result;
+        }
 
         if (source is JsonObject)
             return FilterObject(source, paths);
 
-        // Primitive — return as-is if any path matches
         return source.DeepClone();
-    }
-
-    private static JsonNode FilterArray(JsonArray arr, string[] paths)
-    {
-        var result = new JsonArray();
-        foreach (var item in arr)
-        {
-            if (item == null) continue;
-            var filtered = FilterNode(item, paths);
-            if (filtered != null)
-                result.Add(filtered);
-        }
-        return result;
     }
 
     private static JsonObject FilterObject(JsonNode source, string[] paths)
@@ -69,13 +65,13 @@ public static class JsonFilterHelper
         foreach (var path in paths)
         {
             var segments = path.Split('.');
-            SetValueByPath(result, source, segments, 0);
+            MergePath(result, source, segments, 0);
         }
 
         return result;
     }
 
-    private static void SetValueByPath(JsonObject target, JsonNode source, string[] segments, int index)
+    private static void MergePath(JsonNode target, JsonNode source, string[] segments, int index)
     {
         if (index >= segments.Length)
             return;
@@ -86,54 +82,67 @@ public static class JsonFilterHelper
             return;
 
         var value = sourceObj[key];
+        var isLeaf = index == segments.Length - 1;
 
-        if (index == segments.Length - 1)
+        if (isLeaf)
         {
-            // Leaf — copy value
-            if (!target.ContainsKey(key))
-                target[key] = value?.DeepClone();
+            // Leaf — copy value if not already present
+            var targetObj = target as JsonObject;
+            if (targetObj != null && !targetObj.ContainsKey(key))
+                targetObj[key] = value?.DeepClone();
             return;
         }
 
-        // Intermediate segment
-        var remaining = segments[(index + 1)..];
-
-        if (value is JsonArray arr)
+        if (value is JsonArray sourceArr)
         {
-            // Array traversal: apply remaining path to each element
-            var filteredArr = new JsonArray();
-            foreach (var item in arr)
+            // Array traversal: merge remaining path into each element by index
+            var targetObj = target as JsonObject;
+            if (targetObj == null) return;
+
+            if (!targetObj.ContainsKey(key))
             {
-                if (item is JsonObject itemObj)
+                // First path through this array — create skeleton with empty objects
+                var newArr = new JsonArray();
+                for (int i = 0; i < sourceArr.Count; i++)
                 {
-                    var itemResult = new JsonObject();
-                    SetValueByPath(itemResult, itemObj, segments, index + 1);
-                    if (itemResult.Count > 0)
-                        filteredArr.Add(itemResult);
+                    var item = sourceArr[i];
+                    if (item is JsonObject itemObj)
+                    {
+                        var itemResult = new JsonObject();
+                        MergePath(itemResult, itemObj, segments, index + 1);
+                        newArr.Add(itemResult);
+                    }
+                    else if (item == null)
+                        newArr.Add(null);
+                    else
+                        newArr.Add(item.DeepClone());
                 }
-                else if (remaining.Length == 0)
-                {
-                    filteredArr.Add(item?.DeepClone());
-                }
+                targetObj[key] = newArr;
             }
-            if (!target.ContainsKey(key))
-                target[key] = filteredArr;
-            else if (target[key] is JsonArray existingArr)
+            else if (targetObj[key] is JsonArray existingArr)
             {
-                // Merge arrays — add missing items
-                foreach (var item in filteredArr)
-                    existingArr.Add(item?.DeepClone());
+                // Subsequent paths — merge into existing elements by index
+                for (int i = 0; i < sourceArr.Count && i < existingArr.Count; i++)
+                {
+                    var srcItem = sourceArr[i];
+                    var tgtItem = existingArr[i];
+                    if (srcItem is JsonObject srcObj && tgtItem is JsonObject tgtObj)
+                        MergePath(tgtObj, srcObj, segments, index + 1);
+                }
             }
             return;
         }
 
         if (value is JsonObject)
         {
-            // Nested object — ensure intermediate exists
-            if (!target.ContainsKey(key) || target[key] is not JsonObject)
-                target[key] = new JsonObject();
+            // Nested object — ensure intermediate exists in target
+            var targetObj = target as JsonObject;
+            if (targetObj == null) return;
 
-            SetValueByPath((JsonObject)target[key]!, value, segments, index + 1);
+            if (!targetObj.ContainsKey(key) || targetObj[key] is not JsonObject)
+                targetObj[key] = new JsonObject();
+
+            MergePath(targetObj[key]!, value, segments, index + 1);
             return;
         }
     }
