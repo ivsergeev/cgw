@@ -1,0 +1,187 @@
+{
+  "Groups": [
+    {
+      "Id": "jira",
+      "Name": "Jira",
+      "Description": "Jira REST API v2",
+      "Color": "#0052CC"
+    }
+  ],
+  "Skills": [
+    {
+      "Id": "00000000-0000-0000-0001-000000000001",
+      "Name": "jira_issue",
+      "Description": "Детали задачи по ключу",
+      "GroupId": "jira",
+      "Url": "https://JIRA_URL/rest/api/2/issue/{key}",
+      "HttpMethod": "GET",
+      "Parameters": [
+        { "Name": "key", "Description": "Ключ задачи (напр. PROJ-123)", "Type": "String", "Required": true }
+      ],
+      "Headers": {},
+      "BodyTemplate": "",
+      "FetchOrigin": "",
+      "ResponseFilter": "key, fields.summary, fields.status.name, fields.priority.name, fields.assignee.displayName, fields.reporter.displayName, fields.description, fields.issuetype.name, fields.created, fields.updated, fields.labels, fields.components.name, fields.fixVersions.name",
+      "CacheEnabled": false,
+      "CacheTtlSeconds": 60
+    },
+    {
+      "Id": "00000000-0000-0000-0001-000000000002",
+      "Name": "jira_search",
+      "Description": "Поиск задач по JQL",
+      "GroupId": "jira",
+      "Url": "https://JIRA_URL/rest/api/2/search",
+      "HttpMethod": "GET",
+      "Parameters": [
+        { "Name": "jql", "Description": "JQL-запрос (напр. project = PROJ AND status = Open)", "Type": "String", "Required": true },
+        { "Name": "maxResults", "Description": "Макс. кол-во результатов", "Type": "Integer", "Required": false },
+        { "Name": "fields", "Description": "Поля через запятую (напр. summary,status,assignee)", "Type": "String", "Required": false },
+        { "Name": "startAt", "Description": "Смещение для пагинации", "Type": "Integer", "Required": false }
+      ],
+      "Headers": {},
+      "BodyTemplate": "",
+      "FetchOrigin": "",
+      "ResponseFilter": "total, startAt, maxResults, issues.key, issues.fields.summary, issues.fields.status.name, issues.fields.priority.name, issues.fields.assignee.displayName, issues.fields.issuetype.name, issues.fields.updated",
+      "CacheEnabled": false,
+      "CacheTtlSeconds": 60
+    },
+    {
+      "Id": "00000000-0000-0000-0001-000000000003",
+      "Name": "jira_comments",
+      "Description": "Комментарии к задаче",
+      "GroupId": "jira",
+      "Url": "https://JIRA_URL/rest/api/2/issue/{key}/comment",
+      "HttpMethod": "GET",
+      "Parameters": [
+        { "Name": "key", "Description": "Ключ задачи", "Type": "String", "Required": true }
+      ],
+      "Headers": {},
+      "BodyTemplate": "",
+      "FetchOrigin": "",
+      "ResponseFilter": "total, comments.author.displayName, comments.body, comments.created, comments.updated",
+      "CacheEnabled": false,
+      "CacheTtlSeconds": 60
+    },
+    {
+      "Id": "00000000-0000-0000-0001-000000000004",
+      "Name": "jira_transitions",
+      "Description": "Доступные переходы статуса задачи",
+      "GroupId": "jira",
+      "Url": "https://JIRA_URL/rest/api/2/issue/{key}/transitions",
+      "HttpMethod": "GET",
+      "Parameters": [
+        { "Name": "key", "Description": "Ключ задачи", "Type": "String", "Required": true }
+      ],
+      "Headers": {},
+      "BodyTemplate": "",
+      "FetchOrigin": "",
+      "ResponseFilter": "transitions.id, transitions.name, transitions.to.name",
+      "CacheEnabled": false,
+      "CacheTtlSeconds": 60
+    },
+    {
+      "Id": "00000000-0000-0000-0001-000000000005",
+      "Name": "jira_project",
+      "Description": "Детали проекта",
+      "GroupId": "jira",
+      "Url": "https://JIRA_URL/rest/api/2/project/{key}",
+      "HttpMethod": "GET",
+      "Parameters": [
+        { "Name": "key", "Description": "Ключ проекта (напр. PROJ)", "Type": "String", "Required": true }
+      ],
+      "Headers": {},
+      "BodyTemplate": "",
+      "FetchOrigin": "",
+      "ResponseFilter": "key, name, description, lead.displayName, projectCategory.name",
+      "CacheEnabled": false,
+      "CacheTtlSeconds": 60
+    },
+    {
+      "Id": "00000000-0000-0000-0001-000000000006",
+      "Name": "jira_projects",
+      "Description": "Список всех проектов",
+      "GroupId": "jira",
+      "Url": "https://JIRA_URL/rest/api/2/project",
+      "HttpMethod": "GET",
+      "Parameters": [],
+      "Headers": {},
+      "BodyTemplate": "",
+      "FetchOrigin": "",
+      "ResponseFilter": "key, name, projectCategory.name",
+      "CacheEnabled": false,
+      "CacheTtlSeconds": 60
+    },
+    {
+      "Id": "00000000-0000-0000-0001-000000000007",
+      "Name": "jira_worklogs",
+      "Description": "Списания времени по задаче",
+      "GroupId": "jira",
+      "Url": "https://JIRA_URL/rest/api/2/issue/{key}/worklog",
+      "HttpMethod": "GET",
+      "Parameters": [
+        { "Name": "key", "Description": "Ключ задачи", "Type": "String", "Required": true }
+      ],
+      "Headers": {},
+      "BodyTemplate": "",
+      "FetchOrigin": "",
+      "ResponseFilter": "total, worklogs.author.displayName, worklogs.timeSpent, worklogs.started, worklogs.comment",
+      "CacheEnabled": false,
+      "CacheTtlSeconds": 60
+    },
+    {
+      "Id": "00000000-0000-0000-0001-000000000008",
+      "Name": "jira_sprint_issues",
+      "Description": "Задачи текущего спринта на доске",
+      "GroupId": "jira",
+      "Url": "https://JIRA_URL/rest/agile/1.0/board/{boardId}/sprint/{sprintId}/issue",
+      "HttpMethod": "GET",
+      "Parameters": [
+        { "Name": "boardId", "Description": "ID доски", "Type": "Integer", "Required": true },
+        { "Name": "sprintId", "Description": "ID спринта", "Type": "Integer", "Required": true },
+        { "Name": "maxResults", "Description": "Макс. кол-во", "Type": "Integer", "Required": false }
+      ],
+      "Headers": {},
+      "BodyTemplate": "",
+      "FetchOrigin": "",
+      "ResponseFilter": "total, issues.key, issues.fields.summary, issues.fields.status.name, issues.fields.assignee.displayName, issues.fields.issuetype.name, issues.fields.priority.name",
+      "CacheEnabled": false,
+      "CacheTtlSeconds": 60
+    },
+    {
+      "Id": "00000000-0000-0000-0001-000000000009",
+      "Name": "jira_boards",
+      "Description": "Список досок",
+      "GroupId": "jira",
+      "Url": "https://JIRA_URL/rest/agile/1.0/board",
+      "HttpMethod": "GET",
+      "Parameters": [
+        { "Name": "name", "Description": "Фильтр по названию доски", "Type": "String", "Required": false },
+        { "Name": "type", "Description": "Тип: scrum, kanban", "Type": "String", "Required": false }
+      ],
+      "Headers": {},
+      "BodyTemplate": "",
+      "FetchOrigin": "",
+      "ResponseFilter": "total, values.id, values.name, values.type",
+      "CacheEnabled": false,
+      "CacheTtlSeconds": 60
+    },
+    {
+      "Id": "00000000-0000-0000-0001-000000000010",
+      "Name": "jira_sprints",
+      "Description": "Спринты доски",
+      "GroupId": "jira",
+      "Url": "https://JIRA_URL/rest/agile/1.0/board/{boardId}/sprint",
+      "HttpMethod": "GET",
+      "Parameters": [
+        { "Name": "boardId", "Description": "ID доски", "Type": "Integer", "Required": true },
+        { "Name": "state", "Description": "Состояние: active, closed, future", "Type": "String", "Required": false }
+      ],
+      "Headers": {},
+      "BodyTemplate": "",
+      "FetchOrigin": "",
+      "ResponseFilter": "values.id, values.name, values.state, values.startDate, values.endDate, values.goal",
+      "CacheEnabled": false,
+      "CacheTtlSeconds": 60
+    }
+  ]
+}

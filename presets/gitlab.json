@@ -1,0 +1,235 @@
+{
+  "Groups": [
+    {
+      "Id": "gitlab",
+      "Name": "GitLab",
+      "Description": "GitLab REST API v4",
+      "Color": "#FC6D26"
+    }
+  ],
+  "Skills": [
+    {
+      "Id": "00000000-0000-0000-0000-000000000001",
+      "Name": "gl_projects",
+      "Description": "\u041f\u043e\u0438\u0441\u043a \u043f\u0440\u043e\u0435\u043a\u0442\u043e\u0432",
+      "GroupId": "gitlab",
+      "Url": "https://GITLAB_URL/api/v4/projects",
+      "HttpMethod": "GET",
+      "Parameters": [
+        { "Name": "search", "Description": "\u041f\u043e\u0438\u0441\u043a\u043e\u0432\u044b\u0439 \u0437\u0430\u043f\u0440\u043e\u0441", "Type": "String", "Required": false },
+        { "Name": "membership", "Description": "\u0422\u043e\u043b\u044c\u043a\u043e \u043c\u043e\u0438 \u043f\u0440\u043e\u0435\u043a\u0442\u044b (true/false)", "Type": "Boolean", "Required": false },
+        { "Name": "per_page", "Description": "\u041a\u043e\u043b-\u0432\u043e \u0440\u0435\u0437\u0443\u043b\u044c\u0442\u0430\u0442\u043e\u0432 \u043d\u0430 \u0441\u0442\u0440\u0430\u043d\u0438\u0446\u0443", "Type": "Integer", "Required": false }
+      ],
+      "Headers": {},
+      "BodyTemplate": "",
+      "FetchOrigin": "",
+      "ResponseFilter": "id, name, path_with_namespace, web_url, default_branch",
+      "CacheEnabled": false,
+      "CacheTtlSeconds": 60
+    },
+    {
+      "Id": "00000000-0000-0000-0000-000000000002",
+      "Name": "gl_project",
+      "Description": "\u0414\u0435\u0442\u0430\u043b\u0438 \u043f\u0440\u043e\u0435\u043a\u0442\u0430",
+      "GroupId": "gitlab",
+      "Url": "https://GITLAB_URL/api/v4/projects/{id}",
+      "HttpMethod": "GET",
+      "Parameters": [
+        { "Name": "id", "Description": "ID \u043f\u0440\u043e\u0435\u043a\u0442\u0430", "Type": "Integer", "Required": true }
+      ],
+      "Headers": {},
+      "BodyTemplate": "",
+      "FetchOrigin": "",
+      "ResponseFilter": "id, name, path_with_namespace, description, web_url, default_branch, star_count, forks_count",
+      "CacheEnabled": false,
+      "CacheTtlSeconds": 60
+    },
+    {
+      "Id": "00000000-0000-0000-0000-000000000003",
+      "Name": "gl_mrs",
+      "Description": "\u0421\u043f\u0438\u0441\u043e\u043a Merge Request-\u043e\u0432 \u043f\u0440\u043e\u0435\u043a\u0442\u0430",
+      "GroupId": "gitlab",
+      "Url": "https://GITLAB_URL/api/v4/projects/{id}/merge_requests",
+      "HttpMethod": "GET",
+      "Parameters": [
+        { "Name": "id", "Description": "ID \u043f\u0440\u043e\u0435\u043a\u0442\u0430", "Type": "Integer", "Required": true },
+        { "Name": "state", "Description": "\u0421\u043e\u0441\u0442\u043e\u044f\u043d\u0438\u0435: opened, closed, merged, all", "Type": "String", "Required": false },
+        { "Name": "per_page", "Description": "\u041a\u043e\u043b-\u0432\u043e \u0440\u0435\u0437\u0443\u043b\u044c\u0442\u0430\u0442\u043e\u0432", "Type": "Integer", "Required": false }
+      ],
+      "Headers": {},
+      "BodyTemplate": "",
+      "FetchOrigin": "",
+      "ResponseFilter": "iid, title, state, author.name, source_branch, target_branch, web_url, created_at",
+      "CacheEnabled": false,
+      "CacheTtlSeconds": 60
+    },
+    {
+      "Id": "00000000-0000-0000-0000-000000000004",
+      "Name": "gl_mr_detail",
+      "Description": "\u0414\u0435\u0442\u0430\u043b\u0438 Merge Request",
+      "GroupId": "gitlab",
+      "Url": "https://GITLAB_URL/api/v4/projects/{id}/merge_requests/{mr_iid}",
+      "HttpMethod": "GET",
+      "Parameters": [
+        { "Name": "id", "Description": "ID \u043f\u0440\u043e\u0435\u043a\u0442\u0430", "Type": "Integer", "Required": true },
+        { "Name": "mr_iid", "Description": "IID Merge Request", "Type": "Integer", "Required": true }
+      ],
+      "Headers": {},
+      "BodyTemplate": "",
+      "FetchOrigin": "",
+      "ResponseFilter": "iid, title, description, state, author.name, assignee.name, reviewers.name, source_branch, target_branch, web_url, created_at, merged_at, user_notes_count",
+      "CacheEnabled": false,
+      "CacheTtlSeconds": 60
+    },
+    {
+      "Id": "00000000-0000-0000-0000-000000000005",
+      "Name": "gl_mr_changes",
+      "Description": "\u0414\u0438\u0444\u0444 \u0438\u0437\u043c\u0435\u043d\u0435\u043d\u0438\u0439 Merge Request",
+      "GroupId": "gitlab",
+      "Url": "https://GITLAB_URL/api/v4/projects/{id}/merge_requests/{mr_iid}/changes",
+      "HttpMethod": "GET",
+      "Parameters": [
+        { "Name": "id", "Description": "ID \u043f\u0440\u043e\u0435\u043a\u0442\u0430", "Type": "Integer", "Required": true },
+        { "Name": "mr_iid", "Description": "IID Merge Request", "Type": "Integer", "Required": true }
+      ],
+      "Headers": {},
+      "BodyTemplate": "",
+      "FetchOrigin": "",
+      "ResponseFilter": "iid, title, changes.old_path, changes.new_path, changes.diff, changes.new_file, changes.deleted_file",
+      "CacheEnabled": false,
+      "CacheTtlSeconds": 60
+    },
+    {
+      "Id": "00000000-0000-0000-0000-000000000006",
+      "Name": "gl_mr_notes",
+      "Description": "\u041a\u043e\u043c\u043c\u0435\u043d\u0442\u0430\u0440\u0438\u0438 \u043a Merge Request",
+      "GroupId": "gitlab",
+      "Url": "https://GITLAB_URL/api/v4/projects/{id}/merge_requests/{mr_iid}/notes",
+      "HttpMethod": "GET",
+      "Parameters": [
+        { "Name": "id", "Description": "ID \u043f\u0440\u043e\u0435\u043a\u0442\u0430", "Type": "Integer", "Required": true },
+        { "Name": "mr_iid", "Description": "IID Merge Request", "Type": "Integer", "Required": true }
+      ],
+      "Headers": {},
+      "BodyTemplate": "",
+      "FetchOrigin": "",
+      "ResponseFilter": "id, body, author.name, created_at, system, resolvable, resolved",
+      "CacheEnabled": false,
+      "CacheTtlSeconds": 60
+    },
+    {
+      "Id": "00000000-0000-0000-0000-000000000007",
+      "Name": "gl_branches",
+      "Description": "\u0412\u0435\u0442\u043a\u0438 \u0440\u0435\u043f\u043e\u0437\u0438\u0442\u043e\u0440\u0438\u044f",
+      "GroupId": "gitlab",
+      "Url": "https://GITLAB_URL/api/v4/projects/{id}/repository/branches",
+      "HttpMethod": "GET",
+      "Parameters": [
+        { "Name": "id", "Description": "ID \u043f\u0440\u043e\u0435\u043a\u0442\u0430", "Type": "Integer", "Required": true },
+        { "Name": "search", "Description": "\u041f\u043e\u0438\u0441\u043a \u043f\u043e \u0438\u043c\u0435\u043d\u0438 \u0432\u0435\u0442\u043a\u0438", "Type": "String", "Required": false }
+      ],
+      "Headers": {},
+      "BodyTemplate": "",
+      "FetchOrigin": "",
+      "ResponseFilter": "name, merged, protected, default, commit.short_id, commit.title, commit.author_name",
+      "CacheEnabled": false,
+      "CacheTtlSeconds": 60
+    },
+    {
+      "Id": "00000000-0000-0000-0000-000000000008",
+      "Name": "gl_commits",
+      "Description": "\u041a\u043e\u043c\u043c\u0438\u0442\u044b \u043f\u0440\u043e\u0435\u043a\u0442\u0430",
+      "GroupId": "gitlab",
+      "Url": "https://GITLAB_URL/api/v4/projects/{id}/repository/commits",
+      "HttpMethod": "GET",
+      "Parameters": [
+        { "Name": "id", "Description": "ID \u043f\u0440\u043e\u0435\u043a\u0442\u0430", "Type": "Integer", "Required": true },
+        { "Name": "ref_name", "Description": "\u0412\u0435\u0442\u043a\u0430 \u0438\u043b\u0438 \u0442\u0435\u0433", "Type": "String", "Required": false },
+        { "Name": "per_page", "Description": "\u041a\u043e\u043b-\u0432\u043e \u0440\u0435\u0437\u0443\u043b\u044c\u0442\u0430\u0442\u043e\u0432", "Type": "Integer", "Required": false }
+      ],
+      "Headers": {},
+      "BodyTemplate": "",
+      "FetchOrigin": "",
+      "ResponseFilter": "short_id, title, author_name, created_at, message",
+      "CacheEnabled": false,
+      "CacheTtlSeconds": 60
+    },
+    {
+      "Id": "00000000-0000-0000-0000-000000000009",
+      "Name": "gl_file",
+      "Description": "\u0421\u043e\u0434\u0435\u0440\u0436\u0438\u043c\u043e\u0435 \u0444\u0430\u0439\u043b\u0430 \u0438\u0437 \u0440\u0435\u043f\u043e\u0437\u0438\u0442\u043e\u0440\u0438\u044f",
+      "GroupId": "gitlab",
+      "Url": "https://GITLAB_URL/api/v4/projects/{id}/repository/files/{file_path}/raw",
+      "HttpMethod": "GET",
+      "Parameters": [
+        { "Name": "id", "Description": "ID \u043f\u0440\u043e\u0435\u043a\u0442\u0430", "Type": "Integer", "Required": true },
+        { "Name": "file_path", "Description": "\u041f\u0443\u0442\u044c \u043a \u0444\u0430\u0439\u043b\u0443 (URL-encoded)", "Type": "String", "Required": true },
+        { "Name": "ref", "Description": "\u0412\u0435\u0442\u043a\u0430/\u0442\u0435\u0433/\u043a\u043e\u043c\u043c\u0438\u0442", "Type": "String", "Required": false }
+      ],
+      "Headers": {},
+      "BodyTemplate": "",
+      "FetchOrigin": "",
+      "ResponseFilter": "",
+      "CacheEnabled": false,
+      "CacheTtlSeconds": 60
+    },
+    {
+      "Id": "00000000-0000-0000-0000-000000000010",
+      "Name": "gl_pipelines",
+      "Description": "\u041f\u0430\u0439\u043f\u043b\u0430\u0439\u043d\u044b CI/CD",
+      "GroupId": "gitlab",
+      "Url": "https://GITLAB_URL/api/v4/projects/{id}/pipelines",
+      "HttpMethod": "GET",
+      "Parameters": [
+        { "Name": "id", "Description": "ID \u043f\u0440\u043e\u0435\u043a\u0442\u0430", "Type": "Integer", "Required": true },
+        { "Name": "ref", "Description": "\u0412\u0435\u0442\u043a\u0430", "Type": "String", "Required": false },
+        { "Name": "status", "Description": "\u0421\u0442\u0430\u0442\u0443\u0441: running, pending, success, failed, canceled", "Type": "String", "Required": false }
+      ],
+      "Headers": {},
+      "BodyTemplate": "",
+      "FetchOrigin": "",
+      "ResponseFilter": "id, status, ref, sha, web_url, created_at, updated_at",
+      "CacheEnabled": false,
+      "CacheTtlSeconds": 60
+    },
+    {
+      "Id": "00000000-0000-0000-0000-000000000011",
+      "Name": "gl_pipeline_jobs",
+      "Description": "\u0414\u0436\u043e\u0431\u044b \u043f\u0430\u0439\u043f\u043b\u0430\u0439\u043d\u0430",
+      "GroupId": "gitlab",
+      "Url": "https://GITLAB_URL/api/v4/projects/{id}/pipelines/{pipeline_id}/jobs",
+      "HttpMethod": "GET",
+      "Parameters": [
+        { "Name": "id", "Description": "ID \u043f\u0440\u043e\u0435\u043a\u0442\u0430", "Type": "Integer", "Required": true },
+        { "Name": "pipeline_id", "Description": "ID \u043f\u0430\u0439\u043f\u043b\u0430\u0439\u043d\u0430", "Type": "Integer", "Required": true }
+      ],
+      "Headers": {},
+      "BodyTemplate": "",
+      "FetchOrigin": "",
+      "ResponseFilter": "id, name, stage, status, web_url, duration, started_at, finished_at",
+      "CacheEnabled": false,
+      "CacheTtlSeconds": 60
+    },
+    {
+      "Id": "00000000-0000-0000-0000-000000000012",
+      "Name": "gl_tree",
+      "Description": "\u0421\u0442\u0440\u0443\u043a\u0442\u0443\u0440\u0430 \u0444\u0430\u0439\u043b\u043e\u0432 \u0440\u0435\u043f\u043e\u0437\u0438\u0442\u043e\u0440\u0438\u044f",
+      "GroupId": "gitlab",
+      "Url": "https://GITLAB_URL/api/v4/projects/{id}/repository/tree",
+      "HttpMethod": "GET",
+      "Parameters": [
+        { "Name": "id", "Description": "ID \u043f\u0440\u043e\u0435\u043a\u0442\u0430", "Type": "Integer", "Required": true },
+        { "Name": "path", "Description": "\u041f\u0443\u0442\u044c \u043a \u043f\u0430\u043f\u043a\u0435", "Type": "String", "Required": false },
+        { "Name": "ref", "Description": "\u0412\u0435\u0442\u043a\u0430/\u0442\u0435\u0433", "Type": "String", "Required": false },
+        { "Name": "recursive", "Description": "\u0420\u0435\u043a\u0443\u0440\u0441\u0438\u0432\u043d\u044b\u0439 \u043e\u0431\u0445\u043e\u0434 (true/false)", "Type": "Boolean", "Required": false },
+        { "Name": "per_page", "Description": "\u041a\u043e\u043b-\u0432\u043e \u0440\u0435\u0437\u0443\u043b\u044c\u0442\u0430\u0442\u043e\u0432", "Type": "Integer", "Required": false }
+      ],
+      "Headers": {},
+      "BodyTemplate": "",
+      "FetchOrigin": "",
+      "ResponseFilter": "name, path, type",
+      "CacheEnabled": false,
+      "CacheTtlSeconds": 60
+    }
+  ]
+}

@@ -1,0 +1,175 @@
+{
+  "Groups": [
+    {
+      "Id": "confluence",
+      "Name": "Confluence",
+      "Description": "Confluence REST API",
+      "Color": "#1868DB"
+    }
+  ],
+  "Skills": [
+    {
+      "Id": "00000000-0000-0000-0002-000000000001",
+      "Name": "conf_search",
+      "Description": "Поиск страниц по CQL-запросу",
+      "GroupId": "confluence",
+      "Url": "https://CONFLUENCE_URL/rest/api/content/search",
+      "HttpMethod": "GET",
+      "Parameters": [
+        { "Name": "cql", "Description": "CQL-запрос (напр. text ~ \"архитектура\" AND space = DEV)", "Type": "String", "Required": true },
+        { "Name": "limit", "Description": "Макс. кол-во результатов", "Type": "Integer", "Required": false },
+        { "Name": "start", "Description": "Смещение для пагинации", "Type": "Integer", "Required": false }
+      ],
+      "Headers": {},
+      "BodyTemplate": "",
+      "FetchOrigin": "",
+      "ResponseFilter": "totalSize, start, size, results.id, results.title, results.type, results.status, results._links.webui",
+      "CacheEnabled": false,
+      "CacheTtlSeconds": 60
+    },
+    {
+      "Id": "00000000-0000-0000-0002-000000000002",
+      "Name": "conf_page",
+      "Description": "Содержимое страницы",
+      "GroupId": "confluence",
+      "Url": "https://CONFLUENCE_URL/rest/api/content/{id}",
+      "HttpMethod": "GET",
+      "Parameters": [
+        { "Name": "id", "Description": "ID страницы", "Type": "Integer", "Required": true },
+        { "Name": "expand", "Description": "Расширения (напр. body.storage,version,space)", "Type": "String", "Required": false }
+      ],
+      "Headers": {},
+      "BodyTemplate": "",
+      "FetchOrigin": "",
+      "ResponseFilter": "id, title, type, status, version.number, version.by.displayName, version.when, space.key, space.name, body.storage.value, _links.webui",
+      "CacheEnabled": false,
+      "CacheTtlSeconds": 60
+    },
+    {
+      "Id": "00000000-0000-0000-0002-000000000003",
+      "Name": "conf_page_children",
+      "Description": "Дочерние страницы",
+      "GroupId": "confluence",
+      "Url": "https://CONFLUENCE_URL/rest/api/content/{id}/child/page",
+      "HttpMethod": "GET",
+      "Parameters": [
+        { "Name": "id", "Description": "ID родительской страницы", "Type": "Integer", "Required": true },
+        { "Name": "limit", "Description": "Макс. кол-во результатов", "Type": "Integer", "Required": false }
+      ],
+      "Headers": {},
+      "BodyTemplate": "",
+      "FetchOrigin": "",
+      "ResponseFilter": "results.id, results.title, results.status, results._links.webui",
+      "CacheEnabled": false,
+      "CacheTtlSeconds": 60
+    },
+    {
+      "Id": "00000000-0000-0000-0002-000000000004",
+      "Name": "conf_page_comments",
+      "Description": "Комментарии к странице",
+      "GroupId": "confluence",
+      "Url": "https://CONFLUENCE_URL/rest/api/content/{id}/child/comment",
+      "HttpMethod": "GET",
+      "Parameters": [
+        { "Name": "id", "Description": "ID страницы", "Type": "Integer", "Required": true },
+        { "Name": "expand", "Description": "Расширения (напр. body.storage)", "Type": "String", "Required": false },
+        { "Name": "limit", "Description": "Макс. кол-во", "Type": "Integer", "Required": false }
+      ],
+      "Headers": {},
+      "BodyTemplate": "",
+      "FetchOrigin": "",
+      "ResponseFilter": "results.id, results.title, results.body.storage.value, results.version.by.displayName, results.version.when",
+      "CacheEnabled": false,
+      "CacheTtlSeconds": 60
+    },
+    {
+      "Id": "00000000-0000-0000-0002-000000000005",
+      "Name": "conf_spaces",
+      "Description": "Список пространств",
+      "GroupId": "confluence",
+      "Url": "https://CONFLUENCE_URL/rest/api/space",
+      "HttpMethod": "GET",
+      "Parameters": [
+        { "Name": "type", "Description": "Тип: global, personal", "Type": "String", "Required": false },
+        { "Name": "limit", "Description": "Макс. кол-во", "Type": "Integer", "Required": false }
+      ],
+      "Headers": {},
+      "BodyTemplate": "",
+      "FetchOrigin": "",
+      "ResponseFilter": "results.id, results.key, results.name, results.type, results.status, results._links.webui",
+      "CacheEnabled": false,
+      "CacheTtlSeconds": 60
+    },
+    {
+      "Id": "00000000-0000-0000-0002-000000000006",
+      "Name": "conf_space_content",
+      "Description": "Контент пространства",
+      "GroupId": "confluence",
+      "Url": "https://CONFLUENCE_URL/rest/api/space/{spaceKey}/content",
+      "HttpMethod": "GET",
+      "Parameters": [
+        { "Name": "spaceKey", "Description": "Ключ пространства (напр. DEV)", "Type": "String", "Required": true },
+        { "Name": "depth", "Description": "Глубина: all или root", "Type": "String", "Required": false },
+        { "Name": "limit", "Description": "Макс. кол-во", "Type": "Integer", "Required": false }
+      ],
+      "Headers": {},
+      "BodyTemplate": "",
+      "FetchOrigin": "",
+      "ResponseFilter": "page.results.id, page.results.title, page.results.status, page.results._links.webui",
+      "CacheEnabled": false,
+      "CacheTtlSeconds": 60
+    },
+    {
+      "Id": "00000000-0000-0000-0002-000000000007",
+      "Name": "conf_page_history",
+      "Description": "История изменений страницы",
+      "GroupId": "confluence",
+      "Url": "https://CONFLUENCE_URL/rest/api/content/{id}/history",
+      "HttpMethod": "GET",
+      "Parameters": [
+        { "Name": "id", "Description": "ID страницы", "Type": "Integer", "Required": true }
+      ],
+      "Headers": {},
+      "BodyTemplate": "",
+      "FetchOrigin": "",
+      "ResponseFilter": "createdBy.displayName, createdDate, lastUpdated.by.displayName, lastUpdated.when, lastUpdated.number",
+      "CacheEnabled": false,
+      "CacheTtlSeconds": 60
+    },
+    {
+      "Id": "00000000-0000-0000-0002-000000000008",
+      "Name": "conf_page_labels",
+      "Description": "Метки страницы",
+      "GroupId": "confluence",
+      "Url": "https://CONFLUENCE_URL/rest/api/content/{id}/label",
+      "HttpMethod": "GET",
+      "Parameters": [
+        { "Name": "id", "Description": "ID страницы", "Type": "Integer", "Required": true }
+      ],
+      "Headers": {},
+      "BodyTemplate": "",
+      "FetchOrigin": "",
+      "ResponseFilter": "results.name, results.prefix",
+      "CacheEnabled": false,
+      "CacheTtlSeconds": 60
+    },
+    {
+      "Id": "00000000-0000-0000-0002-000000000009",
+      "Name": "conf_page_attachments",
+      "Description": "Вложения страницы",
+      "GroupId": "confluence",
+      "Url": "https://CONFLUENCE_URL/rest/api/content/{id}/child/attachment",
+      "HttpMethod": "GET",
+      "Parameters": [
+        { "Name": "id", "Description": "ID страницы", "Type": "Integer", "Required": true },
+        { "Name": "limit", "Description": "Макс. кол-во", "Type": "Integer", "Required": false }
+      ],
+      "Headers": {},
+      "BodyTemplate": "",
+      "FetchOrigin": "",
+      "ResponseFilter": "results.id, results.title, results.extensions.mediaType, results.extensions.fileSize, results._links.download",
+      "CacheEnabled": false,
+      "CacheTtlSeconds": 60
+    }
+  ]
+}
