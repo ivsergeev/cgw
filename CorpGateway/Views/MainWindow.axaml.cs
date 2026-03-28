@@ -1,3 +1,5 @@
+using System;
+using System.Runtime.InteropServices;
 using Avalonia.Controls;
 using Avalonia.Input;
 using CorpGateway.ViewModels;
@@ -11,34 +13,57 @@ public partial class MainWindow : Window
         InitializeComponent();
     }
 
-    protected override void OnOpened(System.EventArgs e)
+    protected override void OnOpened(EventArgs e)
     {
         base.OnOpened(e);
-        // Disable minimize via platform interop on Windows
-        if (System.OperatingSystem.IsWindows())
-            DisableMinimizeButton();
+        if (OperatingSystem.IsWindows())
+            HookWndProc();
     }
 
-    private void DisableMinimizeButton()
+    // ── Win32: intercept minimize at WM_SYSCOMMAND level ─────────────────
+    private void HookWndProc()
     {
         var handle = TryGetPlatformHandle();
-        if (handle != null)
-        {
-            const int GWL_STYLE = -16;
-            const uint WS_MINIMIZEBOX = 0x00020000;
-            var hwnd = handle.Handle;
-            var style = (uint)GetWindowLong(hwnd, GWL_STYLE);
-            style &= ~WS_MINIMIZEBOX;
-            SetWindowLong(hwnd, GWL_STYLE, (int)style);
-        }
+        if (handle == null) return;
+        var hwnd = handle.Handle;
+
+        _originalWndProc = GetWindowLongPtr(hwnd, GWLP_WNDPROC);
+        _wndProcDelegate = WndProc; // prevent GC
+        SetWindowLongPtr(hwnd, GWLP_WNDPROC, Marshal.GetFunctionPointerForDelegate(_wndProcDelegate));
+        _hwnd = hwnd;
     }
 
-    [System.Runtime.InteropServices.DllImport("user32.dll")]
-    private static extern int GetWindowLong(nint hWnd, int nIndex);
+    private IntPtr _hwnd;
+    private IntPtr _originalWndProc;
+    private WndProcDelegate? _wndProcDelegate;
 
-    [System.Runtime.InteropServices.DllImport("user32.dll")]
-    private static extern int SetWindowLong(nint hWnd, int nIndex, int dwNewLong);
+    private const int GWLP_WNDPROC = -4;
+    private const int WM_SYSCOMMAND = 0x0112;
+    private const int SC_MINIMIZE = 0xF020;
 
+    private delegate IntPtr WndProcDelegate(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
+
+    private IntPtr WndProc(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam)
+    {
+        if (msg == WM_SYSCOMMAND && ((int)wParam & 0xFFF0) == SC_MINIMIZE)
+        {
+            // Swallow minimize → hide to tray instead
+            Hide();
+            return IntPtr.Zero;
+        }
+        return CallWindowProc(_originalWndProc, hWnd, msg, wParam, lParam);
+    }
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr GetWindowLongPtr(IntPtr hWnd, int nIndex);
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr SetWindowLongPtr(IntPtr hWnd, int nIndex, IntPtr dwNewLong);
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr CallWindowProc(IntPtr lpPrevWndFunc, IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
+
+    // ── Keyboard ─────────────────────────────────────────────────────────
     protected override void OnKeyDown(KeyEventArgs e)
     {
         if (e.Key == Key.Escape && DataContext is MainViewModel vm)

@@ -8,96 +8,190 @@
         Title="CorpGateway"
         Width="1100" Height="720"
         MinWidth="800" MinHeight="500"
-        Background="#F5F5F5">
+        Background="#F3F4F6">
 
+  <!-- ════════════════════════════════════════════════════════════════════
+       STYLES
+       ════════════════════════════════════════════════════════════════════ -->
   <Window.Styles>
+
+    <!-- Label -->
     <Style Selector="TextBlock.label">
-      <Setter Property="FontSize" Value="11"/>
-      <Setter Property="Foreground" Value="#888"/>
-      <Setter Property="Margin" Value="0,0,0,2"/>
+      <Setter Property="FontSize" Value="12"/>
+      <Setter Property="Foreground" Value="#6B7280"/>
+      <Setter Property="Margin" Value="0,0,0,4"/>
+      <Setter Property="FontWeight" Value="Medium"/>
     </Style>
+
+    <!-- Section header -->
+    <Style Selector="TextBlock.section">
+      <Setter Property="FontSize" Value="13"/>
+      <Setter Property="FontWeight" Value="SemiBold"/>
+      <Setter Property="Foreground" Value="#374151"/>
+      <Setter Property="Margin" Value="0,16,0,10"/>
+    </Style>
+
+    <!-- TextBox field -->
     <Style Selector="TextBox.field">
       <Setter Property="Background" Value="White"/>
-      <Setter Property="BorderBrush" Value="#DDD"/>
+      <Setter Property="BorderBrush" Value="#E5E7EB"/>
       <Setter Property="BorderThickness" Value="1"/>
-      <Setter Property="CornerRadius" Value="6"/>
-      <Setter Property="Padding" Value="8,6"/>
-      <Setter Property="Margin" Value="0,0,0,10"/>
+      <Setter Property="CornerRadius" Value="8"/>
+      <Setter Property="Padding" Value="10,8"/>
+      <Setter Property="Margin" Value="0,0,0,12"/>
+      <Setter Property="FontSize" Value="13"/>
     </Style>
+    <Style Selector="TextBox.field:focus">
+      <Setter Property="BorderBrush" Value="#4F7EF7"/>
+      <Setter Property="BorderThickness" Value="1.5"/>
+    </Style>
+
+    <!-- Primary button -->
     <Style Selector="Button.primary">
       <Setter Property="Background" Value="#4F7EF7"/>
       <Setter Property="Foreground" Value="White"/>
-      <Setter Property="CornerRadius" Value="6"/>
-      <Setter Property="Padding" Value="14,7"/>
+      <Setter Property="CornerRadius" Value="8"/>
+      <Setter Property="Padding" Value="16,8"/>
       <Setter Property="FontSize" Value="13"/>
+      <Setter Property="FontWeight" Value="SemiBold"/>
     </Style>
+    <Style Selector="Button.primary:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="#3B6CE4"/>
+    </Style>
+    <Style Selector="Button.primary:pressed /template/ ContentPresenter">
+      <Setter Property="Background" Value="#2D5BD0"/>
+    </Style>
+
+    <!-- Danger button -->
     <Style Selector="Button.danger">
-      <Setter Property="Background" Value="#FF4D4D"/>
+      <Setter Property="Background" Value="#EF4444"/>
       <Setter Property="Foreground" Value="White"/>
-      <Setter Property="CornerRadius" Value="6"/>
-      <Setter Property="Padding" Value="10,7"/>
+      <Setter Property="CornerRadius" Value="8"/>
+      <Setter Property="Padding" Value="10,8"/>
       <Setter Property="FontSize" Value="13"/>
+      <Setter Property="FontWeight" Value="SemiBold"/>
     </Style>
+    <Style Selector="Button.danger:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="#DC2626"/>
+    </Style>
+    <Style Selector="Button.danger:pressed /template/ ContentPresenter">
+      <Setter Property="Background" Value="#B91C1C"/>
+    </Style>
+
+    <!-- Ghost button -->
     <Style Selector="Button.ghost">
       <Setter Property="Background" Value="Transparent"/>
-      <Setter Property="Foreground" Value="#555"/>
-      <Setter Property="BorderBrush" Value="#DDD"/>
+      <Setter Property="Foreground" Value="#4B5563"/>
+      <Setter Property="BorderBrush" Value="#E5E7EB"/>
       <Setter Property="BorderThickness" Value="1"/>
-      <Setter Property="CornerRadius" Value="6"/>
-      <Setter Property="Padding" Value="10,7"/>
+      <Setter Property="CornerRadius" Value="8"/>
+      <Setter Property="Padding" Value="12,8"/>
       <Setter Property="FontSize" Value="13"/>
     </Style>
+    <Style Selector="Button.ghost:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="#F3F4F6"/>
+      <Setter Property="BorderBrush" Value="#D1D5DB"/>
+    </Style>
+    <Style Selector="Button.ghost:pressed /template/ ContentPresenter">
+      <Setter Property="Background" Value="#E5E7EB"/>
+    </Style>
+
+    <!-- Subtle danger (for inline delete) -->
+    <Style Selector="Button.danger-subtle">
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="Foreground" Value="#9CA3AF"/>
+      <Setter Property="CornerRadius" Value="6"/>
+      <Setter Property="Padding" Value="6,4"/>
+      <Setter Property="FontSize" Value="11"/>
+      <Setter Property="Opacity" Value="0"/>
+    </Style>
+    <Style Selector="Button.danger-subtle:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="#FEE2E2"/>
+      <Setter Property="Foreground" Value="#EF4444"/>
+    </Style>
+
+    <!-- ListBox items -->
     <Style Selector="ListBoxItem">
       <Setter Property="Padding" Value="10,8"/>
-      <Setter Property="CornerRadius" Value="6"/>
+      <Setter Property="CornerRadius" Value="8"/>
+      <Setter Property="Margin" Value="0,1"/>
+    </Style>
+    <Style Selector="ListBoxItem:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="#F3F4F6"/>
     </Style>
     <Style Selector="ListBoxItem:selected /template/ ContentPresenter">
-      <Setter Property="Background" Value="#EEF3FF"/>
+      <Setter Property="Background" Value="#EEF2FF"/>
     </Style>
+    <Style Selector="ListBoxItem:selected:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="#E0E7FF"/>
+    </Style>
+
+    <!-- Show delete button on group hover -->
+    <Style Selector="ListBoxItem:pointerover Button.danger-subtle">
+      <Setter Property="Opacity" Value="1"/>
+    </Style>
+
+    <!-- Skill card action buttons — subtle, visible on hover -->
+    <Style Selector="Button.skill-action">
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="CornerRadius" Value="6"/>
+      <Setter Property="Padding" Value="8,4"/>
+      <Setter Property="FontSize" Value="12"/>
+      <Setter Property="Opacity" Value="0.4"/>
+    </Style>
+    <Style Selector="ListBoxItem:pointerover Button.skill-action">
+      <Setter Property="Opacity" Value="1"/>
+    </Style>
+    <Style Selector="Button.skill-action:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="#E5E7EB"/>
+    </Style>
+
+    <!-- Separator -->
+    <Style Selector="Rectangle.separator">
+      <Setter Property="Height" Value="1"/>
+      <Setter Property="Fill" Value="#E5E7EB"/>
+      <Setter Property="Margin" Value="0,8"/>
+    </Style>
+
   </Window.Styles>
 
-  <Grid ColumnDefinitions="200,1,*,1,380">
 
-    <!-- ── Боковая панель: группы ────────────────────────────────────── -->
+  <!-- ════════════════════════════════════════════════════════════════════
+       LAYOUT: sidebar | skills | edit panel
+       ════════════════════════════════════════════════════════════════════ -->
+  <Grid ColumnDefinitions="220,1,*,1,400">
+
+    <!-- ── Sidebar ──────────────────────────────────────────────────────── -->
     <Grid RowDefinitions="Auto,*,Auto" Background="White">
 
-      <!-- Заголовок -->
-      <StackPanel Grid.Row="0" Margin="12,14,12,8">
-        <TextBlock Text="CorpGateway" FontSize="16" FontWeight="SemiBold" Foreground="#1A1A1A"/>
-        <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,4,0,0">
-          <Ellipse Width="8" Height="8">
-            <Ellipse.Fill>
-              <SolidColorBrush Color="{Binding IsServerRunning, Converter={x:Static conv:BoolToColorConverter.Instance}, ConverterParameter='#22C55E:#EF4444'}"/>
-            </Ellipse.Fill>
-          </Ellipse>
-          <TextBlock Text="{Binding StatusText}" FontSize="11" Foreground="#888"/>
-        </StackPanel>
-
-        <!-- Статус Chrome CDP -->
-        <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,4,0,0">
-          <Ellipse Width="8" Height="8">
-            <Ellipse.Fill>
-              <SolidColorBrush Color="{Binding IsCdpConnected, Converter={x:Static conv:BoolToColorConverter.Instance}, ConverterParameter='#22C55E:#EF4444'}"/>
-            </Ellipse.Fill>
-          </Ellipse>
-          <TextBlock Text="{Binding CdpStatusText}" FontSize="11" Foreground="#888"/>
-        </StackPanel>
-        <StackPanel Orientation="Horizontal" Spacing="4" Margin="0,6,0,0">
-          <TextBox Text="{Binding CdpPort}" Width="52" FontSize="11" Padding="4,3"
-                   Watermark="9222" IsEnabled="{Binding !IsCdpConnected}"
-                   CornerRadius="4" BorderBrush="#DDD" BorderThickness="1"/>
-          <Button Content="Подключить" Classes="ghost" FontSize="11" Padding="8,4"
-                  Command="{Binding ConnectCdpCommand}"
-                  IsVisible="{Binding !IsCdpConnected}"/>
-          <Button Content="Отключить" Classes="ghost" FontSize="11" Padding="8,4"
-                  Command="{Binding DisconnectCdpCommand}"
-                  IsVisible="{Binding IsCdpConnected}"/>
+      <!-- Header -->
+      <StackPanel Grid.Row="0" Margin="16,16,16,12">
+        <TextBlock Text="CorpGateway" FontSize="18" FontWeight="Bold" Foreground="#111827"/>
+        <StackPanel Margin="0,10,0,0" Spacing="6">
+          <!-- Server status -->
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <Ellipse Width="8" Height="8" VerticalAlignment="Center">
+              <Ellipse.Fill>
+                <SolidColorBrush Color="{Binding IsServerRunning, Converter={x:Static conv:BoolToColorConverter.Instance}, ConverterParameter='#22C55E:#EF4444'}"/>
+              </Ellipse.Fill>
+            </Ellipse>
+            <TextBlock Text="{Binding StatusText}" FontSize="12" Foreground="#6B7280"/>
+          </StackPanel>
+          <!-- CDP status (indicator only, connect is automatic) -->
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <Ellipse Width="8" Height="8" VerticalAlignment="Center">
+              <Ellipse.Fill>
+                <SolidColorBrush Color="{Binding IsCdpConnected, Converter={x:Static conv:BoolToColorConverter.Instance}, ConverterParameter='#22C55E:#EF4444'}"/>
+              </Ellipse.Fill>
+            </Ellipse>
+            <TextBlock Text="{Binding CdpStatusText}" FontSize="12" Foreground="#6B7280"/>
+          </StackPanel>
         </StackPanel>
       </StackPanel>
 
-      <Rectangle Grid.Row="0" Height="1" Fill="#EEE" VerticalAlignment="Bottom"/>
+      <Rectangle Grid.Row="0" Height="1" Fill="#E5E7EB" VerticalAlignment="Bottom"/>
 
-      <!-- Список групп -->
+      <!-- Groups list -->
       <ListBox Grid.Row="1"
                ItemsSource="{Binding Groups}"
                SelectedItem="{Binding SelectedGroup}"
@@ -107,16 +201,9 @@
         <ListBox.ItemTemplate>
           <DataTemplate x:DataType="models:SkillGroup">
             <Grid ColumnDefinitions="*,Auto">
-              <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8">
-                <Ellipse Width="8" Height="8" VerticalAlignment="Center">
-                  <Ellipse.Fill>
-                    <SolidColorBrush Color="{Binding Color}"/>
-                  </Ellipse.Fill>
-                </Ellipse>
-                <TextBlock Text="{Binding Name}" FontSize="13" VerticalAlignment="Center"/>
-              </StackPanel>
-              <Button Grid.Column="1" Content="✕" FontSize="9" Padding="4,2"
-                      Classes="danger" VerticalAlignment="Center"
+              <TextBlock Grid.Column="0" Text="{Binding Name}" FontSize="14" VerticalAlignment="Center" Foreground="#1F2937"/>
+              <Button Grid.Column="1" Content="✕" FontSize="10"
+                      Classes="danger-subtle" VerticalAlignment="Center"
                       Command="{ReflectionBinding $parent[Window].DataContext.DeleteGroupCommand}"
                       CommandParameter="{Binding}"/>
             </Grid>
@@ -124,117 +211,115 @@
         </ListBox.ItemTemplate>
       </ListBox>
 
-      <!-- Нижние элементы -->
-      <StackPanel Grid.Row="2" Margin="12,8,12,12" Spacing="6">
+      <!-- Footer -->
+      <StackPanel Grid.Row="2" Margin="12,8,12,14" Spacing="8">
         <Button Content="+ Новая группа"
                 Classes="ghost"
                 HorizontalAlignment="Stretch"
+                HorizontalContentAlignment="Center"
                 Command="{Binding StartAddGroupCommand}"/>
-        <CheckBox IsChecked="{Binding StartWithSystem}"
-                  Content="Запускать с Windows"
-                  FontSize="11" Foreground="#666"/>
+
+        <Rectangle Classes="separator" Margin="0,2"/>
+
+        <Button Classes="ghost"
+                HorizontalAlignment="Stretch"
+                HorizontalContentAlignment="Left"
+                Padding="10,8"
+                Command="{Binding OpenSettingsCommand}">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <TextBlock Text="⚙" FontSize="14"/>
+            <TextBlock Text="Настройки" FontSize="12"/>
+          </StackPanel>
+        </Button>
       </StackPanel>
     </Grid>
 
-    <Rectangle Grid.Column="1" Fill="#EEE"/>
+    <Rectangle Grid.Column="1" Fill="#E5E7EB"/>
 
-    <!-- ── Центр: список скилов ─────────────────────────────────────── -->
-    <Grid Grid.Column="2" RowDefinitions="Auto,*" Background="#FAFAFA">
+    <!-- ── Center: skills list ──────────────────────────────────────────── -->
+    <Grid Grid.Column="2" RowDefinitions="Auto,*" Background="#F9FAFB">
 
-      <!-- Панель инструментов -->
-      <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto" Margin="14,10" Grid.Row="0">
-        <TextBox Grid.Column="0"
-                 Watermark="Поиск скилов..."
-                 Text="{Binding SearchText}"
-                 Classes="field"
-                 Margin="0"/>
-        <Button Grid.Column="1"
-                Content="Экспорт"
-                Classes="ghost"
-                Margin="8,0,0,0"
-                FontSize="12"
-                Command="{Binding ExportSkillsCommand}"/>
-        <Button Grid.Column="2"
-                Content="Импорт"
-                Classes="ghost"
-                Margin="4,0,0,0"
-                FontSize="12"
-                Command="{Binding ImportSkillsCommand}"/>
-        <Button Grid.Column="3"
-                Content="+ Скил"
-                Classes="primary"
-                Margin="8,0,0,0"
-                Command="{Binding StartAddSkillCommand}"/>
-      </Grid>
+      <!-- Toolbar -->
+      <Border Grid.Row="0" BorderBrush="#E5E7EB" BorderThickness="0,0,0,1" Padding="16,12">
+        <Grid ColumnDefinitions="*,Auto">
+          <TextBox Grid.Column="0"
+                   Watermark="Поиск скилов..."
+                   Text="{Binding SearchText}"
+                   Classes="field"
+                   Margin="0"
+                   VerticalAlignment="Center"/>
+          <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" Margin="12,0,0,0">
+            <Button Content="Экспорт" Classes="ghost" FontSize="12"
+                    Command="{Binding ExportSkillsCommand}"/>
+            <Button Content="Импорт" Classes="ghost" FontSize="12"
+                    Command="{Binding ImportSkillsCommand}"/>
+            <Button Content="+ Скил" Classes="primary" FontSize="12"
+                    Command="{Binding StartAddSkillCommand}"/>
+          </StackPanel>
+        </Grid>
+      </Border>
 
-      <!-- Скилы -->
+      <!-- Skills list -->
       <ListBox Grid.Row="1"
                ItemsSource="{Binding Skills}"
                SelectedItem="{Binding SelectedSkill}"
                Background="Transparent"
-               Padding="8,0,8,8">
+               Padding="12,8,12,12">
         <ListBox.ItemTemplate>
           <DataTemplate x:DataType="vm:SkillViewModel">
-            <Grid ColumnDefinitions="*,Auto,Auto">
+            <Grid ColumnDefinitions="*,Auto">
 
-              <StackPanel Grid.Column="0" Spacing="2">
-                <StackPanel Orientation="Horizontal" Spacing="6">
-                  <Border Background="#EEF3FF" CornerRadius="4" Padding="5,2">
-                    <TextBlock Text="{Binding Method}" FontSize="10" Foreground="#4F7EF7" FontWeight="SemiBold"/>
+              <StackPanel Grid.Column="0" Spacing="4">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <Border Background="#EEF2FF" CornerRadius="4" Padding="6,2">
+                    <TextBlock Text="{Binding Method}" FontSize="10" Foreground="#4F7EF7" FontWeight="Bold"/>
                   </Border>
-                  <TextBlock Text="{Binding Name}" FontSize="13" FontWeight="SemiBold"/>
+                  <TextBlock Text="{Binding Name}" FontSize="14" FontWeight="SemiBold" Foreground="#111827"/>
                 </StackPanel>
-                <TextBlock Text="{Binding Signature}" FontSize="11" Foreground="#888" FontFamily="Cascadia Code,Consolas,monospace"/>
-                <TextBlock Text="{Binding Description}" FontSize="12" Foreground="#666"/>
+                <TextBlock Text="{Binding Signature}" FontSize="11" Foreground="#9CA3AF"
+                           FontFamily="Cascadia Code,Consolas,monospace"/>
+                <TextBlock Text="{Binding Description}" FontSize="12" Foreground="#6B7280"
+                           TextTrimming="CharacterEllipsis"/>
               </StackPanel>
 
-              <!-- Кнопка теста -->
-              <Button Grid.Column="1"
-                      Content="▶ Тест"
-                      Classes="ghost"
-                      Margin="8,0,4,0"
-                      VerticalAlignment="Center"
-                      FontSize="12"
-                      Command="{ReflectionBinding $parent[Window].DataContext.TestSkillCommand}"
-                      CommandParameter="{Binding}"/>
-
-              <!-- Кнопка удаления -->
-              <Button Grid.Column="2"
-                      Content="✕"
-                      Classes="danger"
-                      Padding="6,4"
-                      Margin="4,0,0,0"
-                      VerticalAlignment="Center"
-                      FontSize="11"
-                      Command="{ReflectionBinding $parent[Window].DataContext.DeleteSkillCommand}"
-                      CommandParameter="{Binding}"/>
+              <!-- Hover actions -->
+              <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                <Button Content="▶ Тест" Classes="skill-action" Foreground="#4F7EF7"
+                        Command="{ReflectionBinding $parent[Window].DataContext.TestSkillCommand}"
+                        CommandParameter="{Binding}"/>
+                <Button Content="✕" Classes="skill-action" Foreground="#EF4444" FontSize="13"
+                        Command="{ReflectionBinding $parent[Window].DataContext.DeleteSkillCommand}"
+                        CommandParameter="{Binding}"/>
+              </StackPanel>
             </Grid>
           </DataTemplate>
         </ListBox.ItemTemplate>
       </ListBox>
     </Grid>
 
-    <Rectangle Grid.Column="3" Fill="#EEE"/>
+    <Rectangle Grid.Column="3" Fill="#E5E7EB"/>
 
-    <!-- ── Правая панель: редактирование / тест ─────────────────────── -->
+    <!-- ── Right panel: edit / test ─────────────────────────────────────── -->
     <Grid Grid.Column="4" Background="White">
 
-      <!-- Пустое состояние -->
+      <!-- Empty state -->
       <StackPanel IsVisible="{Binding EditPanelMode, Converter={x:Static StringConverters.IsNullOrEmpty}}"
                   HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="8">
-        <TextBlock Text="Выберите скил для редактирования" Foreground="#AAA" FontSize="14"/>
-        <TextBlock Text="или нажмите + Скил для создания" Foreground="#BBB" FontSize="12"/>
+        <TextBlock Text="Выберите скил" Foreground="#9CA3AF" FontSize="16" FontWeight="SemiBold"
+                   HorizontalAlignment="Center"/>
+        <TextBlock Text="или создайте новый нажав + Скил" Foreground="#D1D5DB" FontSize="13"
+                   HorizontalAlignment="Center"/>
       </StackPanel>
 
-      <!-- Редактирование -->
+      <!-- Scrollable edit area -->
       <ScrollViewer IsVisible="{Binding EditPanelMode, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
                     HorizontalScrollBarVisibility="Disabled">
-        <StackPanel Margin="20" Spacing="0"
+        <StackPanel Margin="24,20,24,24" Spacing="0"
                     IsVisible="{Binding EditPanelMode, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
 
-          <!-- Панель группы -->
+          <!-- ── Edit Group ─────────────────────────────────────────── -->
           <StackPanel IsVisible="{Binding EditPanelMode, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=EditGroup}">
-            <TextBlock Text="Группа" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,16"/>
+            <TextBlock Text="Группа" FontSize="18" FontWeight="Bold" Foreground="#111827" Margin="0,0,0,20"/>
 
             <TextBlock Text="Название" Classes="label"/>
             <TextBox Text="{Binding EditGroup.Name}" Classes="field"/>
@@ -242,101 +327,94 @@
             <TextBlock Text="Описание" Classes="label"/>
             <TextBox Text="{Binding EditGroup.Description}" Classes="field"/>
 
-            <TextBlock Text="Цвет" Classes="label"/>
-            <TextBox Text="{Binding EditGroup.Color}" Classes="field"/>
-
-            <TextBlock Text="{Binding ErrorMessage}" Foreground="#CC3333" FontSize="12"
-                       Margin="0,8,0,0"
+            <TextBlock Text="{Binding ErrorMessage}" Foreground="#EF4444" FontSize="12"
+                       Margin="0,4,0,0"
                        IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
                        TextWrapping="Wrap"/>
-            <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,8,0,0">
+
+            <StackPanel Orientation="Horizontal" Spacing="10" Margin="0,16,0,0">
               <Button Content="Сохранить" Classes="primary" Command="{Binding SaveGroupCommand}"/>
               <Button Content="Отмена" Classes="ghost" Command="{Binding CancelEditCommand}"/>
             </StackPanel>
           </StackPanel>
 
-          <!-- Панель скила -->
+          <!-- ── Edit Skill ─────────────────────────────────────────── -->
           <StackPanel IsVisible="{Binding EditPanelMode, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=EditSkill}">
-            <TextBlock Text="Скил" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,16"/>
+            <TextBlock Text="Настройка скила" FontSize="18" FontWeight="Bold" Foreground="#111827" Margin="0,0,0,4"/>
+
+            <!-- SECTION: Основное -->
+            <TextBlock Text="Основное" Classes="section"/>
 
             <TextBlock Text="Название (имя функции)" Classes="label"/>
-            <TextBox Text="{Binding EditSkill.Name}"
-                     Classes="field"
+            <TextBox Text="{Binding EditSkill.Name}" Classes="field"
                      Watermark="напр. get_employee"/>
 
             <TextBlock Text="Описание (видно агенту)" Classes="label"/>
-            <TextBox Text="{Binding EditSkill.Description}"
-                     Classes="field"
+            <TextBox Text="{Binding EditSkill.Description}" Classes="field"
                      Watermark="Что возвращает этот скил?"/>
 
+            <!-- SECTION: Запрос -->
+            <Rectangle Classes="separator"/>
+            <TextBlock Text="Запрос" Classes="section"/>
+
             <TextBlock Text="URL эндпоинта" Classes="label"/>
-            <TextBox Text="{Binding EditSkill.Url}"
-                     Classes="field"
+            <TextBox Text="{Binding EditSkill.Url}" Classes="field"
                      Watermark="https://internal.corp/api/employees/{id}"/>
 
             <TextBlock Text="Origin URL (необяз.)" Classes="label"/>
-            <TextBox Text="{Binding EditSkill.FetchOrigin}"
-                     Classes="field"
-                     Watermark="https://app.corp.com — откуда выполнять запрос (если отличается от URL)"/>
+            <TextBox Text="{Binding EditSkill.FetchOrigin}" Classes="field"
+                     Watermark="https://app.corp.com"/>
+            <TextBlock Text="Откуда выполнять запрос, если отличается от URL"
+                       FontSize="11" Foreground="#9CA3AF" Margin="0,-8,0,8"/>
 
             <TextBlock Text="HTTP метод" Classes="label"/>
             <ComboBox ItemsSource="{Binding EditSkill.HttpMethods}"
                       SelectedItem="{Binding EditSkill.HttpMethod}"
-                      Margin="0,0,0,10"
-                      HorizontalAlignment="Left" Width="100"/>
+                      Margin="0,0,0,12"
+                      HorizontalAlignment="Left" Width="120"
+                      CornerRadius="8"/>
 
-            <!-- Шаблон тела запроса (для POST/PUT/PATCH) -->
-            <StackPanel IsVisible="{Binding EditSkill.HasBody}" Margin="0,0,0,10">
-              <TextBlock Text="Шаблон тела запроса (JSON, параметры как {{имя}})" Classes="label"/>
+            <!-- Body template (POST/PUT/PATCH) -->
+            <StackPanel IsVisible="{Binding EditSkill.HasBody}" Margin="0,0,0,12">
+              <TextBlock Text="Шаблон тела запроса (JSON)" Classes="label"/>
               <TextBox Text="{Binding EditSkill.BodyTemplate}"
                        Classes="field"
                        AcceptsReturn="True"
                        TextWrapping="Wrap"
-                       MinHeight="60"
+                       MinHeight="80"
                        FontFamily="Cascadia Code,Consolas,monospace"
                        FontSize="12"
                        Watermark="{}{&quot;field&quot;: &quot;{{param}}&quot;}"/>
-              <TextBlock Text="Если пусто — параметры отправляются как плоский JSON"
-                         FontSize="10" Foreground="#AAA" Margin="0,-6,0,0"/>
+              <TextBlock Text="Параметры как {{имя}}. Если пусто — отправляются как плоский JSON"
+                         FontSize="11" Foreground="#9CA3AF" Margin="0,-8,0,4"/>
             </StackPanel>
 
-            <!-- Фильтр ответа -->
-            <TextBlock Text="Фильтр полей ответа (необяз.)" Classes="label"/>
-            <TextBox Text="{Binding EditSkill.ResponseFilter}"
-                     Classes="field"
-                     Watermark="key, fields.summary, fields.status.name, fields.assignee.displayName"/>
+            <!-- SECTION: Ответ -->
+            <Rectangle Classes="separator"/>
+            <TextBlock Text="Ответ" Classes="section"/>
+
+            <TextBlock Text="Фильтр полей (необяз.)" Classes="label"/>
+            <TextBox Text="{Binding EditSkill.ResponseFilter}" Classes="field"
+                     Watermark="key, fields.summary, fields.status.name"/>
             <TextBlock Text="Через запятую, dot-notation. Если пусто — полный ответ"
-                       FontSize="10" Foreground="#AAA" Margin="0,-6,0,6"/>
+                       FontSize="11" Foreground="#9CA3AF" Margin="0,-8,0,8"/>
 
-            <!-- Кэширование -->
-            <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,0,0,10">
-              <CheckBox IsChecked="{Binding EditSkill.CacheEnabled}" Content="Кэшировать ответы"/>
-              <TextBox Text="{Binding EditSkill.CacheTtl}"
-                       Width="60"
-                       Classes="field"
-                       Margin="0"
-                       IsVisible="{Binding EditSkill.CacheEnabled}"/>
-              <TextBlock Text="сек" VerticalAlignment="Center"
-                         IsVisible="{Binding EditSkill.CacheEnabled}"/>
-            </StackPanel>
-
-            <!-- Параметры -->
-            <StackPanel Orientation="Horizontal" Margin="0,8,0,8">
-              <TextBlock Text="Параметры" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center"/>
-              <Button Content="+ Добавить"
-                      Classes="ghost"
-                      FontSize="11"
-                      Padding="8,4"
-                      Margin="8,0,0,0"
+            <!-- SECTION: Параметры -->
+            <Rectangle Classes="separator"/>
+            <StackPanel Orientation="Horizontal" Margin="0,16,0,12">
+              <TextBlock Text="Параметры" FontSize="14" FontWeight="SemiBold" Foreground="#374151"
+                         VerticalAlignment="Center"/>
+              <Button Content="+ Добавить" Classes="ghost" FontSize="12" Padding="10,5"
+                      Margin="10,0,0,0"
                       Command="{Binding EditSkill.AddParameterCommand}"/>
             </StackPanel>
 
             <ItemsControl ItemsSource="{Binding EditSkill.Parameters}">
               <ItemsControl.ItemTemplate>
                 <DataTemplate x:DataType="vm:ParameterViewModel">
-                  <Border Background="#F8F8F8" CornerRadius="8" Padding="12" Margin="0,0,0,8">
-                    <Grid ColumnDefinitions="*,8,120,8,80,8,Auto" RowDefinitions="Auto,8,Auto">
-
+                  <Border Background="#F9FAFB" CornerRadius="10" Padding="14" Margin="0,0,0,8"
+                          BorderBrush="#E5E7EB" BorderThickness="1">
+                    <Grid ColumnDefinitions="*,8,120,8,80,8,Auto" RowDefinitions="Auto,6,Auto">
                       <TextBox Grid.Column="0" Grid.Row="0"
                                Text="{Binding Name}"
                                Watermark="имя_параметра"
@@ -344,7 +422,8 @@
 
                       <ComboBox Grid.Column="2" Grid.Row="0"
                                 SelectedItem="{Binding Type}"
-                                HorizontalAlignment="Stretch">
+                                HorizontalAlignment="Stretch"
+                                CornerRadius="8">
                         <models:ParameterType>String</models:ParameterType>
                         <models:ParameterType>Integer</models:ParameterType>
                         <models:ParameterType>Float</models:ParameterType>
@@ -355,13 +434,14 @@
                       <CheckBox Grid.Column="4" Grid.Row="0"
                                 IsChecked="{Binding Required}"
                                 Content="Обяз."
-                                VerticalAlignment="Center"/>
+                                VerticalAlignment="Center"
+                                FontSize="12"/>
 
                       <Button Grid.Column="6" Grid.Row="0"
-                              Content="✕"
-                              Classes="danger"
+                              Content="✕" FontSize="12"
+                              Classes="danger-subtle"
+                              Opacity="1"
                               Padding="8,6"
-                              FontSize="12"
                               Command="{ReflectionBinding $parent[Window].DataContext.EditSkill.RemoveParameterCommand}"
                               CommandParameter="{Binding}"/>
 
@@ -375,73 +455,131 @@
               </ItemsControl.ItemTemplate>
             </ItemsControl>
 
-            <!-- Превью сигнатуры -->
-            <Border Background="#F0F4FF" CornerRadius="8" Padding="12" Margin="0,8,0,16">
+            <!-- Signature preview -->
+            <Border Background="#F0F4FF" CornerRadius="10" Padding="14" Margin="0,12,0,20"
+                    BorderBrush="#DDE4F7" BorderThickness="1">
               <StackPanel>
-                <TextBlock Text="Сигнатура для агента" FontSize="11" Foreground="#888" Margin="0,0,0,4"/>
+                <TextBlock Text="Сигнатура для агента" FontSize="12" Foreground="#6B7280" Margin="0,0,0,6"/>
                 <TextBlock Text="{Binding EditSkill.PreviewSignature}"
                            FontFamily="Cascadia Code,Consolas,monospace"
                            FontSize="12"
-                           Foreground="#333"
+                           Foreground="#1F2937"
                            TextWrapping="Wrap"/>
               </StackPanel>
             </Border>
 
-            <TextBlock Text="{Binding ErrorMessage}" Foreground="#CC3333" FontSize="12"
+            <!-- Error -->
+            <TextBlock Text="{Binding ErrorMessage}" Foreground="#EF4444" FontSize="12"
                        Margin="0,0,0,8"
                        IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
                        TextWrapping="Wrap"/>
-            <StackPanel Orientation="Horizontal" Spacing="8">
+
+            <!-- Actions -->
+            <StackPanel Orientation="Horizontal" Spacing="10">
               <Button Content="Сохранить скил" Classes="primary" Command="{Binding SaveSkillCommand}"/>
               <Button Content="Отмена" Classes="ghost" Command="{Binding CancelEditCommand}"
                       IsVisible="{Binding EditSkill.IsNew}"/>
             </StackPanel>
           </StackPanel>
 
-          <!-- Панель тестирования -->
+          <!-- ── Test Panel ─────────────────────────────────────────── -->
           <StackPanel IsVisible="{Binding EditPanelMode, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=Test}">
             <TextBlock Text="{Binding TestPanel.SkillName, StringFormat='Тест: {0}'}"
-                       FontSize="16" FontWeight="SemiBold" Margin="0,0,0,16"/>
+                       FontSize="18" FontWeight="Bold" Foreground="#111827" Margin="0,0,0,20"/>
 
             <ItemsControl ItemsSource="{Binding TestPanel.ParamValues}">
               <ItemsControl.ItemTemplate>
                 <DataTemplate x:DataType="vm:TestParamViewModel">
-                  <StackPanel Margin="0,0,0,8">
-                    <StackPanel Orientation="Horizontal" Spacing="4">
-                      <TextBlock Text="{Binding Name}" Classes="label" VerticalAlignment="Center"/>
-                      <Border Background="#EEF3FF" CornerRadius="4" Padding="4,1">
-                        <TextBlock Text="{Binding TypeLabel}" FontSize="9" Foreground="#4F7EF7"/>
+                  <StackPanel Margin="0,0,0,10">
+                    <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,0,0,4">
+                      <TextBlock Text="{Binding Name}" Classes="label" VerticalAlignment="Center"
+                                 FontWeight="SemiBold" Foreground="#374151"/>
+                      <Border Background="#EEF2FF" CornerRadius="4" Padding="5,2">
+                        <TextBlock Text="{Binding TypeLabel}" FontSize="10" Foreground="#4F7EF7"/>
                       </Border>
-                      <Border Background="#FFE5E5" CornerRadius="4" Padding="4,1"
+                      <Border Background="#FEF2F2" CornerRadius="4" Padding="5,2"
                               IsVisible="{Binding Required}">
-                        <TextBlock Text="обяз." FontSize="9" Foreground="#CC3333"/>
+                        <TextBlock Text="обяз." FontSize="10" Foreground="#EF4444"/>
                       </Border>
                     </StackPanel>
-                    <TextBox Text="{Binding Value}" Classes="field" Margin="0,2,0,0"/>
+                    <TextBox Text="{Binding Value}" Classes="field" Margin="0"/>
                   </StackPanel>
                 </DataTemplate>
               </ItemsControl.ItemTemplate>
             </ItemsControl>
 
-            <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,8,0,12">
+            <StackPanel Orientation="Horizontal" Spacing="10" Margin="0,8,0,16">
               <Button Content="▶ Запустить" Classes="primary"
                       Command="{Binding TestPanel.RunTestCommand}"/>
-<Button Content="Назад" Classes="ghost" Command="{Binding CancelEditCommand}"/>
+              <Button Content="Назад" Classes="ghost" Command="{Binding CancelEditCommand}"/>
             </StackPanel>
 
-            <TextBlock Text="Ответ" Classes="label"/>
-            <Border Background="#1E1E2E" CornerRadius="8" Padding="12">
-              <TextBox Text="{Binding TestPanel.ResponseText}"
-                       IsReadOnly="True"
-                       FontFamily="Cascadia Code,Consolas,monospace"
-                       FontSize="12"
-                       Foreground="#CDD6F4"
-                       Background="Transparent"
-                       BorderThickness="0"
-                       TextWrapping="Wrap"
-                       AcceptsReturn="True"
-                       MinHeight="200"/>
+            <TextBlock Text="Ответ" Classes="label" Margin="0,0,0,6"/>
+            <Border Background="#1E1E2E" CornerRadius="10" Padding="14">
+              <ScrollViewer MaxHeight="400" HorizontalScrollBarVisibility="Auto">
+                <TextBox Text="{Binding TestPanel.ResponseText}"
+                         IsReadOnly="True"
+                         FontFamily="Cascadia Code,Consolas,monospace"
+                         FontSize="12"
+                         Foreground="#CDD6F4"
+                         Background="Transparent"
+                         BorderThickness="0"
+                         TextWrapping="Wrap"
+                         AcceptsReturn="True"
+                         MinHeight="200"/>
+              </ScrollViewer>
             </Border>
+          </StackPanel>
+
+          <!-- ── Settings Panel ───────────────────────────────────────── -->
+          <StackPanel IsVisible="{Binding EditPanelMode, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=Settings}">
+            <TextBlock Text="Настройки" FontSize="18" FontWeight="Bold" Foreground="#111827" Margin="0,0,0,4"/>
+
+            <!-- API -->
+            <TextBlock Text="Сервер" Classes="section"/>
+
+            <TextBlock Text="API порт" Classes="label"/>
+            <TextBox Text="{Binding EditApiPort}" Classes="field" Width="120" HorizontalAlignment="Left"/>
+            <TextBlock Text="Изменение порта требует перезапуска приложения"
+                       FontSize="11" Foreground="#9CA3AF" Margin="0,-8,0,8"/>
+
+            <TextBlock Text="API токен" Classes="label"/>
+            <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,12">
+              <TextBox Grid.Column="0" Text="{Binding ApiToken}" Classes="field" IsReadOnly="True"
+                       Margin="0" FontFamily="Cascadia Code,Consolas,monospace" FontSize="12"/>
+              <Button Grid.Column="1" Content="Копировать" Classes="ghost" FontSize="12"
+                      Margin="8,0,0,0" VerticalAlignment="Top"
+                      Command="{Binding CopyTokenCommand}"/>
+            </Grid>
+
+            <!-- Chrome -->
+            <Rectangle Classes="separator"/>
+            <TextBlock Text="Chrome CDP" Classes="section"/>
+
+            <TextBlock Text="CDP порт" Classes="label"/>
+            <TextBox Text="{Binding EditCdpPort}" Classes="field" Width="120" HorizontalAlignment="Left"/>
+            <TextBlock Text="Порт Chrome с флагом --remote-debugging-port"
+                       FontSize="11" Foreground="#9CA3AF" Margin="0,-8,0,8"/>
+
+            <!-- System -->
+            <Rectangle Classes="separator"/>
+            <TextBlock Text="Система" Classes="section"/>
+
+            <CheckBox IsChecked="{Binding StartWithSystem}"
+                      Content="Запускать с Windows"
+                      FontSize="13" Margin="0,0,0,16"/>
+
+            <!-- Error -->
+            <TextBlock Text="{Binding ErrorMessage}" Foreground="#EF4444" FontSize="12"
+                       Margin="0,0,0,8"
+                       IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                       TextWrapping="Wrap"/>
+
+            <!-- Actions -->
+            <StackPanel Orientation="Horizontal" Spacing="10">
+              <Button Content="Сохранить" Classes="primary" Command="{Binding SaveSettingsCommand}"/>
+              <Button Content="Закрыть" Classes="ghost" Command="{Binding CancelEditCommand}"/>
+            </StackPanel>
           </StackPanel>
 
         </StackPanel>

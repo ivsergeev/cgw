@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Net.WebSockets;
 using System.Text;
@@ -104,12 +105,15 @@ public class ChromeCdpService
     {
         _receiveCts?.Cancel();
 
-        foreach (var kv in _originPool)
+        // Snapshot keys to avoid iterating while ReceiveLoop modifies the dictionary
+        var sessions = _originPool.Values.ToArray();
+        _originPool.Clear();
+
+        foreach (var session in sessions)
         {
-            try { await SendCommandAsync("Target.closeTarget", new { targetId = kv.Value.TargetId }); }
+            try { await SendCommandAsync("Target.closeTarget", new { targetId = session.TargetId }); }
             catch { }
         }
-        _originPool.Clear();
 
         if (_ws is { State: WebSocketState.Open })
         {
@@ -120,6 +124,13 @@ public class ChromeCdpService
         _ws = null;
         IsConnected = false;
         ConnectedPort = 0;
+
+        // Cancel all pending requests
+        foreach (var kv in _pending)
+        {
+            kv.Value.TrySetCanceled();
+            _pending.TryRemove(kv.Key, out _);
+        }
     }
 
     /// <summary>
@@ -435,11 +446,22 @@ public class ChromeCdpService
             }
         }
 
+        // Set Content-Type for requests with body if not explicitly provided by skill headers
+        if (!string.IsNullOrEmpty(bodyJson) && method != "GET" && method != "DELETE")
+        {
+            sb.Append("if (!Object.keys(_headers).some(k => k.toLowerCase() === 'content-type')) ");
+            sb.Append("_headers['Content-Type'] = 'application/json'; ");
+        }
+
+        // Use credentials: 'include' only when relying on cookies (no Authorization header).
+        // When Authorization is present, 'include' conflicts with Access-Control-Allow-Origin: *
+        sb.Append("const _creds = _authHdr ? 'same-origin' : 'include'; ");
+
         sb.Append("const resp = await fetch(");
         sb.Append(JsonSerializer.Serialize(url));
         sb.Append(", { method: ");
         sb.Append(JsonSerializer.Serialize(method));
-        sb.Append(", credentials: 'include'");
+        sb.Append(", credentials: _creds");
         sb.Append(", headers: _headers");
 
         if (!string.IsNullOrEmpty(bodyJson) && method != "GET" && method != "DELETE")
@@ -481,7 +503,7 @@ public class ChromeCdpService
         }
 
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
-        cts.Token.Register(() => tcs.TrySetCanceled());
+        cts.Token.Register(() => { tcs.TrySetCanceled(); _pending.TryRemove(id, out _); });
 
         return await tcs.Task;
     }
@@ -513,7 +535,7 @@ public class ChromeCdpService
         }
 
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
-        cts.Token.Register(() => tcs.TrySetCanceled());
+        cts.Token.Register(() => { tcs.TrySetCanceled(); _pending.TryRemove(id, out _); });
 
         return await tcs.Task;
     }

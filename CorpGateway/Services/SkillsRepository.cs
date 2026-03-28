@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Threading;
 using System.Threading.Tasks;
 using CorpGateway.Models;
 
@@ -18,6 +19,7 @@ public class SkillsStore
 public class SkillsRepository
 {
     private readonly string _storePath;
+    private readonly SemaphoreSlim _ioLock = new(1, 1);
     private SkillsStore _store = new();
 
     private static readonly JsonSerializerOptions _jsonOptions = new()
@@ -36,18 +38,30 @@ public class SkillsRepository
 
     public async Task LoadAsync()
     {
-        if (!File.Exists(_storePath))
+        await _ioLock.WaitAsync();
+        try
         {
-            _store = CreateDefaultStore();
-            await SaveAsync();
-            return;
-        }
+            if (!File.Exists(_storePath))
+            {
+                _store = CreateDefaultStore();
+                await SaveInternalAsync();
+                return;
+            }
 
-        var json = await File.ReadAllTextAsync(_storePath);
-        _store = JsonSerializer.Deserialize<SkillsStore>(json, _jsonOptions) ?? new SkillsStore();
+            var json = await File.ReadAllTextAsync(_storePath);
+            _store = JsonSerializer.Deserialize<SkillsStore>(json, _jsonOptions) ?? new SkillsStore();
+        }
+        finally { _ioLock.Release(); }
     }
 
     public async Task SaveAsync()
+    {
+        await _ioLock.WaitAsync();
+        try { await SaveInternalAsync(); }
+        finally { _ioLock.Release(); }
+    }
+
+    private async Task SaveInternalAsync()
     {
         var json = JsonSerializer.Serialize(_store, _jsonOptions);
         await File.WriteAllTextAsync(_storePath, json);

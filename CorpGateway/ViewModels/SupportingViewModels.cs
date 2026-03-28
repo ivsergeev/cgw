@@ -82,8 +82,6 @@ public class EditSkillViewModel : ReactiveObject
     private string _description = "";
     private string _url = "";
     private string _httpMethod = "GET";
-    private bool _cacheEnabled = false;
-    private int _cacheTtl = 60;
     private string _bodyTemplate = "";
     private string _fetchOrigin = "";
     private string _responseFilter = "";
@@ -108,8 +106,6 @@ public class EditSkillViewModel : ReactiveObject
         get => _httpMethod;
         set { this.RaiseAndSetIfChanged(ref _httpMethod, value); this.RaisePropertyChanged(nameof(HasBody)); }
     }
-    public bool CacheEnabled { get => _cacheEnabled; set => this.RaiseAndSetIfChanged(ref _cacheEnabled, value); }
-    public int CacheTtl { get => _cacheTtl; set => this.RaiseAndSetIfChanged(ref _cacheTtl, value); }
     public string BodyTemplate { get => _bodyTemplate; set => this.RaiseAndSetIfChanged(ref _bodyTemplate, value); }
     public string FetchOrigin { get => _fetchOrigin; set => this.RaiseAndSetIfChanged(ref _fetchOrigin, value); }
     public string ResponseFilter { get => _responseFilter; set => this.RaiseAndSetIfChanged(ref _responseFilter, value); }
@@ -164,7 +160,7 @@ public class EditSkillViewModel : ReactiveObject
     public void Reset(string groupId)
     {
         Id = Guid.Empty; GroupId = groupId; Name = ""; Description = "";
-        Url = ""; HttpMethod = "GET"; CacheEnabled = false; CacheTtl = 60;
+        Url = ""; HttpMethod = "GET";
         BodyTemplate = ""; FetchOrigin = ""; ResponseFilter = "";
         Parameters.Clear();
     }
@@ -172,8 +168,7 @@ public class EditSkillViewModel : ReactiveObject
     public void LoadFrom(Skill s)
     {
         Id = s.Id; GroupId = s.GroupId; Name = s.Name; Description = s.Description;
-        Url = s.Url; HttpMethod = s.HttpMethod; CacheEnabled = s.CacheEnabled;
-        CacheTtl = s.CacheTtlSeconds; BodyTemplate = s.BodyTemplate;
+        Url = s.Url; HttpMethod = s.HttpMethod; BodyTemplate = s.BodyTemplate;
         FetchOrigin = s.FetchOrigin; ResponseFilter = s.ResponseFilter;
         Parameters.Clear();
         foreach (var p in s.Parameters) Parameters.Add(ParameterViewModel.FromModel(p));
@@ -189,7 +184,7 @@ public class EditSkillViewModel : ReactiveObject
             BodyTemplate = BodyTemplate?.Trim() ?? "",
             FetchOrigin = FetchOrigin?.Trim() ?? "",
             ResponseFilter = ResponseFilter?.Trim() ?? "",
-            CacheEnabled = CacheEnabled, CacheTtlSeconds = CacheTtl
+            CacheEnabled = false, CacheTtlSeconds = 60
         };
         foreach (var p in Parameters) skill.Parameters.Add(p.ToModel());
         return skill;

@@ -15,7 +15,7 @@ public class AppConfig
 
     // CDP (Chrome DevTools Protocol) settings
     public int CdpPort { get; set; } = 9222;
-    public bool CdpAutoConnect { get; set; } = false;
+    public bool CdpAutoConnect { get; set; } = true;
 
     private static readonly string ConfigPath = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),

@@ -2,8 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
+using Avalonia.Controls;
 using CorpGateway.Models;
 using CorpGateway.Services;
 using ReactiveUI;
@@ -25,10 +27,13 @@ public class MainViewModel : ReactiveObject
     private string _editPanelMode = "";
     private string _searchText = "";
     private bool _isCdpConnected;
-    private string _cdpStatusText = "Chrome: нет подключения";
+    private string _cdpStatusText = "Chrome";
     private int _cdpPort;
     private string _errorMessage = "";
     private bool _startWithSystem;
+    private int _editApiPort;
+    private int _editCdpPort;
+    private CancellationTokenSource? _autoConnectCts;
 
     public ObservableCollection<SkillGroup> Groups { get; } = new();
     public ObservableCollection<SkillViewModel> Skills { get; } = new();
@@ -133,6 +138,18 @@ public class MainViewModel : ReactiveObject
     public int ApiPort => _config.ApiPort;
     public string ApiToken => _config.ApiToken;
 
+    public int EditApiPort
+    {
+        get => _editApiPort;
+        set => this.RaiseAndSetIfChanged(ref _editApiPort, value);
+    }
+
+    public int EditCdpPort
+    {
+        get => _editCdpPort;
+        set => this.RaiseAndSetIfChanged(ref _editCdpPort, value);
+    }
+
     // ── Sub-ViewModels ───────────────────────────────────────────────────────
     public EditGroupViewModel EditGroup { get; } = new();
     public EditSkillViewModel EditSkill { get; }
@@ -152,6 +169,9 @@ public class MainViewModel : ReactiveObject
     public ICommand DisconnectCdpCommand { get; }
     public ICommand ExportSkillsCommand { get; }
     public ICommand ImportSkillsCommand { get; }
+    public ICommand OpenSettingsCommand { get; }
+    public ICommand SaveSettingsCommand { get; }
+    public ICommand CopyTokenCommand { get; }
 
     // ── Constructor ──────────────────────────────────────────────────────────
     public MainViewModel(SkillsRepository repo, LocalApiServer server, AppConfig config,
@@ -169,7 +189,7 @@ public class MainViewModel : ReactiveObject
 
         IsServerRunning = server.IsRunning;
         StatusText = server.IsRunning
-            ? $"API на порту {server.Port}"
+            ? $"API: {server.Port}"
             : "API сервер остановлен";
 
         StartAddGroupCommand = new RelayCommand(_ =>
@@ -220,19 +240,20 @@ public class MainViewModel : ReactiveObject
         // CDP commands
         ConnectCdpCommand = new AsyncRelayCommand(async _ =>
         {
-            CdpStatusText = "Chrome: подключение...";
+            StopAutoConnect();
+            CdpStatusText = "Chrome: ...";
             var ok = await _cdpService.ConnectAsync(CdpPort);
             IsCdpConnected = ok;
-            CdpStatusText = ok
-                ? $"Chrome: подключен (порт {CdpPort})"
-                : "Chrome: ошибка подключения";
+            CdpStatusText = ok ? $"Chrome: {CdpPort}" : "Chrome";
+            if (!ok) StartAutoConnect();
         });
 
         DisconnectCdpCommand = new AsyncRelayCommand(async _ =>
         {
+            StopAutoConnect();
             await _cdpService.DisconnectAsync();
             IsCdpConnected = false;
-            CdpStatusText = "Chrome: нет подключения";
+            CdpStatusText = "Chrome";
         });
 
         _cdpService.ConnectionLost += _ =>
@@ -240,12 +261,51 @@ public class MainViewModel : ReactiveObject
             Avalonia.Threading.Dispatcher.UIThread.Post(() =>
             {
                 IsCdpConnected = false;
-                CdpStatusText = "Chrome: соединение потеряно";
+                CdpStatusText = "Chrome: ...";
+                StartAutoConnect();
             });
         };
 
         ExportSkillsCommand = new AsyncRelayCommand(_ => ExportSkillsAsync());
         ImportSkillsCommand = new AsyncRelayCommand(_ => ImportSkillsAsync());
+
+        // Settings commands
+        OpenSettingsCommand = new RelayCommand(_ =>
+        {
+            EditApiPort = _config.ApiPort;
+            EditCdpPort = _config.CdpPort;
+            ErrorMessage = "";
+            EditPanelMode = "Settings";
+        });
+
+        SaveSettingsCommand = new AsyncRelayCommand(async _ =>
+        {
+            if (EditApiPort < 1 || EditApiPort > 65535)
+            { ErrorMessage = "API порт должен быть от 1 до 65535"; return; }
+            if (EditCdpPort < 1 || EditCdpPort > 65535)
+            { ErrorMessage = "CDP порт должен быть от 1 до 65535"; return; }
+
+            _config.ApiPort = EditApiPort;
+            _config.CdpPort = EditCdpPort;
+            CdpPort = EditCdpPort;
+            try { await _config.SaveAsync(); } catch { }
+            ErrorMessage = "";
+            StatusText = "Настройки сохранены. Перезапустите для смены порта API";
+        });
+
+        CopyTokenCommand = new RelayCommand(_ =>
+        {
+            var clipboard = Avalonia.Application.Current?.ApplicationLifetime is
+                Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop
+                    ? TopLevel.GetTopLevel(desktop.MainWindow)?.Clipboard
+                    : null;
+            // Fallback: try any visible window
+            clipboard ??= Avalonia.Application.Current?.ApplicationLifetime is
+                Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime d2
+                    ? d2.Windows.FirstOrDefault()?.Clipboard
+                    : null;
+            clipboard?.SetTextAsync(_config.ApiToken);
+        });
     }
 
     // ── Initialization ───────────────────────────────────────────────────────
@@ -254,6 +314,54 @@ public class MainViewModel : ReactiveObject
         await _repo.LoadAsync();
         LoadGroups();
         if (Groups.Count > 0) SelectedGroup = Groups[0];
+
+        // Always start auto-connect loop
+        StartAutoConnect();
+    }
+
+    // ── CDP Auto-Connect ─────────────────────────────────────────────────────
+    private void StartAutoConnect()
+    {
+        StopAutoConnect();
+        _autoConnectCts = new CancellationTokenSource();
+        var ct = _autoConnectCts.Token;
+        _ = Task.Run(async () =>
+        {
+            var attempt = 0;
+            while (!ct.IsCancellationRequested)
+            {
+                try { await Task.Delay(5000, ct); }
+                catch (OperationCanceledException) { break; }
+
+                if (_cdpService.IsConnected) break;
+
+                Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                    CdpStatusText = "Chrome: ...");
+
+                try
+                {
+                    var ok = await _cdpService.ConnectAsync(CdpPort);
+                    if (ok)
+                    {
+                        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                        {
+                            IsCdpConnected = true;
+                            CdpStatusText = $"Chrome: {CdpPort}";
+                        });
+                        break;
+                    }
+                }
+                catch { /* ConnectAsync failed — retry on next iteration */ }
+                attempt++;
+            }
+        }, ct);
+    }
+
+    private void StopAutoConnect()
+    {
+        _autoConnectCts?.Cancel();
+        _autoConnectCts?.Dispose();
+        _autoConnectCts = null;
     }
 
     // ── Groups ───────────────────────────────────────────────────────────────
@@ -334,7 +442,22 @@ public class MainViewModel : ReactiveObject
         var bodyTpl = EditSkill.BodyTemplate?.Trim() ?? "";
         if (!string.IsNullOrEmpty(bodyTpl))
         {
-            try { System.Text.Json.JsonDocument.Parse(bodyTpl); }
+            // Replace {{param}} placeholders with dummy values matching the parameter type
+            // so that templates like {"count": {{limit}}} pass JSON validation.
+            var testJson = bodyTpl;
+            foreach (var p in EditSkill.Parameters)
+            {
+                var placeholder = $"{{{{{p.Name}}}}}";
+                var dummy = p.Type switch
+                {
+                    ParameterType.Integer => "0",
+                    ParameterType.Float => "0.0",
+                    ParameterType.Boolean => "false",
+                    _ => "_" // String, Date — plain text (quotes are already in the template)
+                };
+                testJson = testJson.Replace(placeholder, dummy);
+            }
+            try { System.Text.Json.JsonDocument.Parse(testJson); }
             catch { ErrorMessage = "Body Template не является валидным JSON"; return; }
         }
 

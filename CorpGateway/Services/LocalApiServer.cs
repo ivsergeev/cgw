@@ -21,7 +21,6 @@ public class LocalApiServer : IDisposable
     private readonly HttpListener _listener = new();
     private readonly SkillsRepository _repo;
     private readonly ChromeCdpService? _cdpService;
-    private readonly Dictionary<string, (string Json, DateTime ExpiresAt)> _cache = new();
     private CancellationTokenSource? _cts;
     private string _bearerToken = "";
 
@@ -94,7 +93,7 @@ public class LocalApiServer : IDisposable
                 return;
             }
 
-            // GET /skills/{name}/schema  - full schema for one skill
+            // GET /skills/{name}/schema  - usage-relevant schema for one skill
             if (req.HttpMethod == "GET" && path.StartsWith("/skills/") && path.EndsWith("/schema"))
             {
                 var skillName = path.Split('/')[2];
@@ -105,15 +104,31 @@ public class LocalApiServer : IDisposable
                     await WriteJsonAsync(resp, 404, new { error = "Skill not found" });
                     return;
                 }
-                await WriteJsonAsync(resp, 200, skill);
+                // Return only what an agent needs to call the skill correctly
+                var schema = new
+                {
+                    name = skill.Name,
+                    description = skill.Description,
+                    parameters = skill.Parameters.ConvertAll(p => new
+                    {
+                        name = p.Name,
+                        type = p.Type.ToString().ToLowerInvariant(),
+                        required = p.Required,
+                        description = p.Description
+                    })
+                };
+                await WriteJsonAsync(resp, 200, schema);
                 return;
             }
 
             // POST /invoke  - execute a skill
             if (req.HttpMethod == "POST" && path == "/invoke")
             {
+                // Limit request body to 1 MB
                 using var reader = new StreamReader(req.InputStream, Encoding.UTF8);
-                var body = await reader.ReadToEndAsync();
+                var bodyChars = new char[1024 * 1024];
+                var read = await reader.ReadAsync(bodyChars, 0, bodyChars.Length);
+                var body = new string(bodyChars, 0, read);
                 var invokeReq = JsonSerializer.Deserialize<InvokeRequest>(body,
                     new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
@@ -168,7 +183,7 @@ public class LocalApiServer : IDisposable
         }
 
         // Substitute path parameters: {name} in URL (case-insensitive)
-        var remainingParams = new Dictionary<string, string>(parameters);
+        var remainingParams = new Dictionary<string, string>(parameters, StringComparer.OrdinalIgnoreCase);
         foreach (var kv in parameters)
         {
             var placeholder = $"{{{kv.Key}}}";
@@ -180,14 +195,6 @@ public class LocalApiServer : IDisposable
             }
         }
 
-        // Cache check
-        if (skill.CacheEnabled)
-        {
-            var cacheKey = $"{skill.Id}:{JsonSerializer.Serialize(parameters)}";
-            if (_cache.TryGetValue(cacheKey, out var cached) && cached.ExpiresAt > DateTime.UtcNow)
-                return (200, JsonSerializer.Deserialize<object>(cached.Json)!);
-        }
-
         // Build body for POST/PUT/PATCH
         string? bodyJson = null;
         if (skill.HttpMethod != "GET" && skill.HttpMethod != "DELETE")
@@ -195,10 +202,39 @@ public class LocalApiServer : IDisposable
             if (!string.IsNullOrWhiteSpace(skill.BodyTemplate))
             {
                 bodyJson = skill.BodyTemplate;
+                var paramDefs = skill.Parameters.ToDictionary(p => p.Name, StringComparer.OrdinalIgnoreCase);
                 foreach (var kv in remainingParams)
                 {
-                    var escaped = JsonSerializer.Serialize(kv.Value)[1..^1];
-                    bodyJson = bodyJson.Replace($"{{{{{kv.Key}}}}}", escaped);
+                    var paramType = paramDefs.TryGetValue(kv.Key, out var def) ? def.Type : ParameterType.String;
+                    string substitution;
+                    switch (paramType)
+                    {
+                        case ParameterType.Integer:
+                            substitution = long.TryParse(kv.Value.Trim(), out var intVal)
+                                ? intVal.ToString()
+                                : "0";
+                            break;
+                        case ParameterType.Float:
+                            substitution = double.TryParse(kv.Value.Trim(),
+                                System.Globalization.NumberStyles.Float,
+                                System.Globalization.CultureInfo.InvariantCulture, out var floatVal)
+                                ? floatVal.ToString(System.Globalization.CultureInfo.InvariantCulture)
+                                : "0";
+                            break;
+                        case ParameterType.Boolean:
+                            // Normalize to JSON boolean literal
+                            substitution = kv.Value.Trim().ToLowerInvariant() switch
+                            {
+                                "true" or "1" or "yes" => "true",
+                                _ => "false"
+                            };
+                            break;
+                        default:
+                            // String/Date — JSON-escape the value
+                            substitution = JsonSerializer.Serialize(kv.Value)[1..^1];
+                            break;
+                    }
+                    bodyJson = bodyJson.Replace($"{{{{{kv.Key}}}}}", substitution);
                 }
             }
             else
@@ -236,17 +272,13 @@ public class LocalApiServer : IDisposable
         if (!string.IsNullOrWhiteSpace(skill.ResponseFilter) && fetchResult.IsSuccess)
             respBody = JsonFilterHelper.ApplyFilter(respBody, skill.ResponseFilter);
 
-        // Cache successful responses
-        if (skill.CacheEnabled && fetchResult.IsSuccess)
-        {
-            var cacheKey = $"{skill.Id}:{JsonSerializer.Serialize(parameters)}";
-            _cache[cacheKey] = (respBody, DateTime.UtcNow.AddSeconds(skill.CacheTtlSeconds));
-        }
-
         // Ensure valid HTTP status code (must be 3 digits: 100-599)
         var statusCode = fetchResult.StatusCode;
         if (statusCode < 100 || statusCode > 599)
             statusCode = 502;
+
+        if (string.IsNullOrWhiteSpace(respBody))
+            return (statusCode, new { });
 
         try
         {
@@ -262,6 +294,7 @@ public class LocalApiServer : IDisposable
     private static async Task WriteJsonAsync(HttpListenerResponse resp, int status, object body)
     {
         resp.StatusCode = status;
+        resp.ContentType = "application/json; charset=utf-8";
         var json = JsonSerializer.Serialize(body, new JsonSerializerOptions
         {
             WriteIndented = false,
@@ -269,8 +302,8 @@ public class LocalApiServer : IDisposable
         });
         var bytes = Encoding.UTF8.GetBytes(json);
         resp.ContentLength64 = bytes.Length;
-        await resp.OutputStream.WriteAsync(bytes);
-        resp.OutputStream.Close();
+        await using var output = resp.OutputStream;
+        await output.WriteAsync(bytes);
     }
 
     public void Dispose()
