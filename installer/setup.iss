@@ -4,6 +4,7 @@
 #define MyAppURL "https://github.com/corpgateway"
 #define MyAppExeName "CorpGateway.exe"
 #define MyCliExeName "cgw.exe"
+; CLI binary is renamed from CorpGatewayCli.exe to cgw.exe by build.ps1
 
 [Setup]
 AppId={{B7E3F8A1-4D5C-4F2A-9B1E-6C8D7A3E5F10}

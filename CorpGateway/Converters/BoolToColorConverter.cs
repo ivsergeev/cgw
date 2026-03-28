@@ -19,7 +19,12 @@ public class BoolToColorConverter : IValueConverter
         {
             var parts = s.Split(':');
             if (parts.Length == 2)
-                return Color.Parse(b ? parts[0] : parts[1]);
+            {
+                var color = Color.Parse(b ? parts[0] : parts[1]);
+                return targetType == typeof(IBrush) || targetType == typeof(ISolidColorBrush)
+                    ? new SolidColorBrush(color)
+                    : (object)color;
+            }
         }
         return Colors.Gray;
     }

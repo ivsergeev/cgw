@@ -20,7 +20,34 @@ public partial class MainWindow : Window
             HookWndProc();
     }
 
-    // ── Win32: intercept minimize at WM_SYSCOMMAND level ─────────────────
+    // ── Minimize interception (cross-platform) ───────────────────────────
+
+    // Linux/macOS: Avalonia-level interception via property change
+    private bool _interceptingMinimize;
+
+    protected override void OnPropertyChanged(Avalonia.AvaloniaPropertyChangedEventArgs change)
+    {
+        base.OnPropertyChanged(change);
+
+        // Skip on Windows — handled by WndProc hook (more reliable)
+        if (OperatingSystem.IsWindows()) return;
+
+        if (!_interceptingMinimize &&
+            change.Property == WindowStateProperty &&
+            change.NewValue is WindowState newState &&
+            newState == WindowState.Minimized)
+        {
+            _interceptingMinimize = true;
+            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            {
+                WindowState = WindowState.Normal;
+                Hide();
+                _interceptingMinimize = false;
+            });
+        }
+    }
+
+    // ── Windows: intercept minimize at WM_SYSCOMMAND level ───────────────
     private void HookWndProc()
     {
         var handle = TryGetPlatformHandle();
@@ -47,7 +74,6 @@ public partial class MainWindow : Window
     {
         if (msg == WM_SYSCOMMAND && ((int)wParam & 0xFFF0) == SC_MINIMIZE)
         {
-            // Swallow minimize → hide to tray instead
             Hide();
             return IntPtr.Zero;
         }

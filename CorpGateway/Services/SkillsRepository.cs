@@ -70,8 +70,25 @@ public class SkillsRepository
     public IReadOnlyList<SkillGroup> GetGroups() => _store.Groups.AsReadOnly();
     public IReadOnlyList<Skill> GetSkills() => _store.Skills.AsReadOnly();
 
+    /// <summary>Returns only skills belonging to enabled groups (for API clients).</summary>
+    public IReadOnlyList<Skill> GetEnabledSkills()
+    {
+        var enabledGroupIds = _store.Groups.Where(g => g.Enabled).Select(g => g.Id).ToHashSet();
+        return _store.Skills.Where(s => enabledGroupIds.Contains(s.GroupId)).ToList().AsReadOnly();
+    }
+
     public IReadOnlyList<Skill> GetSkillsByGroup(string groupId) =>
         _store.Skills.FindAll(s => s.GroupId == groupId).AsReadOnly();
+
+    public async Task SetGroupEnabledAsync(string groupId, bool enabled)
+    {
+        var group = _store.Groups.Find(g => g.Id == groupId);
+        if (group != null)
+        {
+            group.Enabled = enabled;
+            await SaveAsync();
+        }
+    }
 
     public Skill? GetSkill(Guid id) => _store.Skills.Find(s => s.Id == id);
 
@@ -141,18 +158,31 @@ public class SkillsRepository
     /// </summary>
     public string ExportCompact(string? groupId = null)
     {
-        var skills = groupId == null
-            ? _store.Skills
-            : _store.Skills.FindAll(s => s.GroupId == groupId);
+        var enabledGroups = _store.Groups.Where(g => g.Enabled).ToList();
+        if (groupId != null)
+            enabledGroups = enabledGroups.Where(g => g.Id == groupId).ToList();
 
         var lines = new System.Text.StringBuilder();
         lines.AppendLine("# Available skills");
-        foreach (var s in skills)
+
+        foreach (var group in enabledGroups)
         {
-            lines.Append(s.CompactSignature);
-            if (!string.IsNullOrEmpty(s.Description))
-                lines.Append($"  // {s.Description}");
-            lines.AppendLine();
+            var groupSkills = _store.Skills.Where(s => s.GroupId == group.Id).ToList();
+            if (groupSkills.Count == 0) continue;
+
+            // Group header with description
+            if (!string.IsNullOrWhiteSpace(group.Description))
+                lines.AppendLine($"\n## {group.Description}");
+            else
+                lines.AppendLine($"\n## {group.Name}");
+
+            foreach (var s in groupSkills)
+            {
+                lines.Append(s.CompactSignature);
+                if (!string.IsNullOrEmpty(s.Description))
+                    lines.Append($"  // {s.Description}");
+                lines.AppendLine();
+            }
         }
         return lines.ToString();
     }

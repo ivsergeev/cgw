@@ -93,4 +93,5 @@ public class SkillGroup
     public string Name { get; set; } = "";
     public string Description { get; set; } = "";
     public string Color { get; set; } = "#5B8DEF";
+    public bool Enabled { get; set; } = true;
 }

@@ -123,8 +123,7 @@ public class MainViewModel : ReactiveObject
         {
             this.RaiseAndSetIfChanged(ref _startWithSystem, value);
             _config.StartWithSystem = value;
-            if (OperatingSystem.IsWindows())
-                AutoStartService.SetAutoStart(value);
+            AutoStartService.SetAutoStart(value);
             Task.Run(async () => { try { await _config.SaveAsync(); } catch { } });
         }
     }
@@ -172,6 +171,7 @@ public class MainViewModel : ReactiveObject
     public ICommand OpenSettingsCommand { get; }
     public ICommand SaveSettingsCommand { get; }
     public ICommand CopyTokenCommand { get; }
+    public ICommand ToggleGroupEnabledCommand { get; }
 
     // ── Constructor ──────────────────────────────────────────────────────────
     public MainViewModel(SkillsRepository repo, LocalApiServer server, AppConfig config,
@@ -305,6 +305,20 @@ public class MainViewModel : ReactiveObject
                     ? d2.Windows.FirstOrDefault()?.Clipboard
                     : null;
             clipboard?.SetTextAsync(_config.ApiToken);
+        });
+
+        ToggleGroupEnabledCommand = new AsyncRelayCommand(async param =>
+        {
+            if (param is SkillGroup group)
+            {
+                group.Enabled = !group.Enabled;
+                await _repo.SetGroupEnabledAsync(group.Id, group.Enabled);
+                // Notify UI to refresh the checkbox
+                LoadGroups();
+                // Re-select the same group
+                var reselect = Groups.FirstOrDefault(g => g.Id == group.Id);
+                if (reselect != null) SelectedGroup = reselect;
+            }
         });
     }
 

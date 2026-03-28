@@ -97,7 +97,7 @@ public class LocalApiServer : IDisposable
             if (req.HttpMethod == "GET" && path.StartsWith("/skills/") && path.EndsWith("/schema"))
             {
                 var skillName = path.Split('/')[2];
-                var skill = _repo.GetSkills().FirstOrDefault(s =>
+                var skill = _repo.GetEnabledSkills().FirstOrDefault(s =>
                     s.Name.Equals(skillName, StringComparison.OrdinalIgnoreCase));
                 if (skill == null)
                 {
@@ -147,7 +147,7 @@ public class LocalApiServer : IDisposable
             if (req.HttpMethod == "GET" && path == "/health")
             {
                 var cdpStatus = _cdpService?.IsConnected == true ? "connected" : "disconnected";
-                await WriteJsonAsync(resp, 200, new { status = "ok", skills = _repo.GetSkills().Count, cdp = cdpStatus });
+                await WriteJsonAsync(resp, 200, new { status = "ok", skills = _repo.GetEnabledSkills().Count, cdp = cdpStatus });
                 return;
             }
 
@@ -161,7 +161,7 @@ public class LocalApiServer : IDisposable
 
     private async Task<(int StatusCode, object Body)> InvokeSkillAsync(InvokeRequest req)
     {
-        var skill = _repo.GetSkills().FirstOrDefault(s =>
+        var skill = _repo.GetEnabledSkills().FirstOrDefault(s =>
             s.Name.Equals(req.Skill, StringComparison.OrdinalIgnoreCase));
 
         if (skill == null)

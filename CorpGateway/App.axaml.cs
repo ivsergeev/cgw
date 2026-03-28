@@ -43,9 +43,8 @@ public class App : Application
             await _repo.LoadAsync();
             _server.Start(_config.ApiPort, _config.ApiToken);
 
-            // Sync auto-start registry with config
-            if (OperatingSystem.IsWindows())
-                AutoStartService.SetAutoStart(_config.StartWithSystem);
+            // Sync auto-start with config (cross-platform)
+            AutoStartService.SetAutoStart(_config.StartWithSystem);
 
             _mainVm = new MainViewModel(_repo, _server, _config, _cdpService);
             await _mainVm.InitializeAsync();
@@ -208,40 +207,73 @@ public class App : Application
     {
         var port = _config?.CdpPort ?? 9222;
         var profileDir = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"chrome-cgw-{Environment.UserName}");
-        try
+        var args = $"--remote-debugging-port={port} --user-data-dir=\"{profileDir}\"";
+
+        // Try common command names via PATH first
+        var commandNames = OperatingSystem.IsWindows()
+            ? new[] { "chrome" }
+            : new[] { "google-chrome", "google-chrome-stable", "chromium-browser", "chromium", "chrome" };
+
+        foreach (var cmd in commandNames)
         {
-            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+            try
             {
-                FileName = "chrome",
-                Arguments = $"--remote-debugging-port={port} --user-data-dir=\"{profileDir}\"",
-                UseShellExecute = true
-            });
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = cmd,
+                    Arguments = args,
+                    UseShellExecute = OperatingSystem.IsWindows()
+                });
+                return;
+            }
+            catch { }
         }
-        catch
+
+        // Fallback: try known installation paths per platform
+        var fallbackPaths = GetChromeFallbackPaths();
+        foreach (var path in fallbackPaths)
         {
-            // chrome not in PATH — try default install locations on Windows
-            var paths = new[]
+            if (!System.IO.File.Exists(path)) continue;
+            try
+            {
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = path,
+                    Arguments = args,
+                    UseShellExecute = false
+                });
+                return;
+            }
+            catch { }
+        }
+    }
+
+    private static string[] GetChromeFallbackPaths()
+    {
+        if (OperatingSystem.IsWindows())
+            return new[]
             {
                 System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "Google", "Chrome", "Application", "chrome.exe"),
                 System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "Google", "Chrome", "Application", "chrome.exe"),
                 System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Google", "Chrome", "Application", "chrome.exe")
             };
-            foreach (var path in paths)
+
+        if (OperatingSystem.IsMacOS())
+            return new[]
             {
-                if (!System.IO.File.Exists(path)) continue;
-                try
-                {
-                    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
-                    {
-                        FileName = path,
-                        Arguments = $"--remote-debugging-port={port} --user-data-dir=\"{profileDir}\"",
-                        UseShellExecute = false
-                    });
-                    return;
-                }
-                catch { }
-            }
-        }
+                "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+                "/Applications/Chromium.app/Contents/MacOS/Chromium"
+            };
+
+        // Linux
+        return new[]
+        {
+            "/usr/bin/google-chrome",
+            "/usr/bin/google-chrome-stable",
+            "/usr/bin/chromium-browser",
+            "/usr/bin/chromium",
+            "/snap/bin/chromium"
+        };
     }
 
     private void Cleanup()

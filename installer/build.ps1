@@ -31,6 +31,10 @@ dotnet publish "$Root\CorpGatewayCli\CorpGatewayCli.csproj" `
     -o "$PublishDir\cli"
 if ($LASTEXITCODE -ne 0) { throw "CLI publish failed" }
 
+# Rename CLI binary to cgw.exe
+$cliExe = "$PublishDir\cli\CorpGatewayCli.exe"
+if (Test-Path $cliExe) { Rename-Item $cliExe "cgw.exe" }
+
 # Find Inno Setup compiler
 $IsccPaths = @(
     "ISCC",

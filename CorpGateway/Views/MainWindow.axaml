@@ -200,9 +200,14 @@
                SelectionMode="Single">
         <ListBox.ItemTemplate>
           <DataTemplate x:DataType="models:SkillGroup">
-            <Grid ColumnDefinitions="*,Auto">
-              <TextBlock Grid.Column="0" Text="{Binding Name}" FontSize="14" VerticalAlignment="Center" Foreground="#1F2937"/>
-              <Button Grid.Column="1" Content="✕" FontSize="10"
+            <Grid ColumnDefinitions="Auto,*,Auto">
+              <CheckBox Grid.Column="0" IsChecked="{Binding Enabled}" VerticalAlignment="Center"
+                        Margin="0,0,6,0" MinWidth="0" Padding="0"
+                        Command="{ReflectionBinding $parent[Window].DataContext.ToggleGroupEnabledCommand}"
+                        CommandParameter="{Binding}"/>
+              <TextBlock Grid.Column="1" Text="{Binding Name}" FontSize="14" VerticalAlignment="Center"
+                         Foreground="{Binding Enabled, Converter={x:Static conv:BoolToColorConverter.Instance}, ConverterParameter='#1F2937:#B0B0B0'}"/>
+              <Button Grid.Column="2" Content="✕" FontSize="10"
                       Classes="danger-subtle" VerticalAlignment="Center"
                       Command="{ReflectionBinding $parent[Window].DataContext.DeleteGroupCommand}"
                       CommandParameter="{Binding}"/>
@@ -324,8 +329,9 @@
             <TextBlock Text="Название" Classes="label"/>
             <TextBox Text="{Binding EditGroup.Name}" Classes="field"/>
 
-            <TextBlock Text="Описание" Classes="label"/>
-            <TextBox Text="{Binding EditGroup.Description}" Classes="field"/>
+            <TextBlock Text="Описание (видно агенту как заголовок группы)" Classes="label"/>
+            <TextBox Text="{Binding EditGroup.Description}" Classes="field"
+                     Watermark="напр. Jira — управление задачами"/>
 
             <TextBlock Text="{Binding ErrorMessage}" Foreground="#EF4444" FontSize="12"
                        Margin="0,4,0,0"
