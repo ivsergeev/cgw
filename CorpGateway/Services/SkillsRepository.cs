@@ -234,7 +234,8 @@ public class SkillsRepository
             _store.Groups.Add(new SkillGroup
             {
                 Id = newId, Name = g.Name,
-                Description = g.Description, Color = g.Color
+                Description = g.Description, Color = g.Color,
+                Enabled = g.Enabled
             });
             groupsAdded++;
         }
