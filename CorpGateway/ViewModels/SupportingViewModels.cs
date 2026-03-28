@@ -29,18 +29,20 @@ public class EditGroupViewModel : ReactiveObject
     private string _name = "";
     private string _description = "";
     private string _color = "#5B8DEF";
+    private bool _enabled = true;
 
     public string Id { get => _id; set => this.RaiseAndSetIfChanged(ref _id, value); }
     public string Name { get => _name; set => this.RaiseAndSetIfChanged(ref _name, value); }
     public string Description { get => _description; set => this.RaiseAndSetIfChanged(ref _description, value); }
     public string Color { get => _color; set => this.RaiseAndSetIfChanged(ref _color, value); }
+    public bool Enabled { get => _enabled; set => this.RaiseAndSetIfChanged(ref _enabled, value); }
     public bool IsNew => string.IsNullOrEmpty(_id);
 
-    public void Reset() { Id = ""; Name = ""; Description = ""; Color = "#5B8DEF"; }
+    public void Reset() { Id = ""; Name = ""; Description = ""; Color = "#5B8DEF"; Enabled = true; }
 
     public void LoadFrom(SkillGroup g)
     {
-        Id = g.Id; Name = g.Name; Description = g.Description; Color = g.Color;
+        Id = g.Id; Name = g.Name; Description = g.Description; Color = g.Color; Enabled = g.Enabled;
     }
 }
 

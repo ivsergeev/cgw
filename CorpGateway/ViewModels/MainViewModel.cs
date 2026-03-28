@@ -428,7 +428,8 @@ public class MainViewModel : ReactiveObject
                 {
                     Name = EditGroup.Name,
                     Description = EditGroup.Description,
-                    Color = EditGroup.Color
+                    Color = EditGroup.Color,
+                    Enabled = EditGroup.Enabled
                 });
             }
             else
@@ -439,6 +440,7 @@ public class MainViewModel : ReactiveObject
                     existing.Name = EditGroup.Name;
                     existing.Description = EditGroup.Description;
                     existing.Color = EditGroup.Color;
+                    existing.Enabled = EditGroup.Enabled;
                     await _repo.UpdateGroupAsync(existing);
                 }
             }
