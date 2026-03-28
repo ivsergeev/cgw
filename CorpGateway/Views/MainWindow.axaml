@@ -200,14 +200,18 @@
                SelectionMode="Single">
         <ListBox.ItemTemplate>
           <DataTemplate x:DataType="models:SkillGroup">
-            <Grid ColumnDefinitions="Auto,*,Auto">
+            <Grid ColumnDefinitions="Auto,*,Auto,Auto">
               <CheckBox Grid.Column="0" IsChecked="{Binding Enabled}" VerticalAlignment="Center"
                         Margin="0,0,6,0" MinWidth="0" Padding="0"
                         Command="{ReflectionBinding $parent[Window].DataContext.ToggleGroupEnabledCommand}"
                         CommandParameter="{Binding}"/>
               <TextBlock Grid.Column="1" Text="{Binding Name}" FontSize="14" VerticalAlignment="Center"
                          Foreground="{Binding Enabled, Converter={x:Static conv:BoolToColorConverter.Instance}, ConverterParameter='#1F2937:#B0B0B0'}"/>
-              <Button Grid.Column="2" Content="✕" FontSize="10"
+              <Button Grid.Column="2" Content="✎" FontSize="11"
+                      Classes="danger-subtle" VerticalAlignment="Center"
+                      Command="{ReflectionBinding $parent[Window].DataContext.StartEditGroupCommand}"
+                      CommandParameter="{Binding}"/>
+              <Button Grid.Column="3" Content="✕" FontSize="10"
                       Classes="danger-subtle" VerticalAlignment="Center"
                       Command="{ReflectionBinding $parent[Window].DataContext.DeleteGroupCommand}"
                       CommandParameter="{Binding}"/>

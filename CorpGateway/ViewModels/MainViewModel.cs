@@ -156,6 +156,7 @@ public class MainViewModel : ReactiveObject
 
     // ── Commands ─────────────────────────────────────────────────────────────
     public ICommand StartAddGroupCommand { get; }
+    public ICommand StartEditGroupCommand { get; }
     public ICommand SaveGroupCommand { get; }
     public ICommand CancelEditCommand { get; }
     public ICommand StartAddSkillCommand { get; }
@@ -197,6 +198,16 @@ public class MainViewModel : ReactiveObject
             ErrorMessage = "";
             EditGroup.Reset();
             EditPanelMode = "EditGroup";
+        });
+
+        StartEditGroupCommand = new RelayCommand(param =>
+        {
+            if (param is SkillGroup group)
+            {
+                ErrorMessage = "";
+                EditGroup.LoadFrom(group);
+                EditPanelMode = "EditGroup";
+            }
         });
 
         SaveGroupCommand = new AsyncRelayCommand(_ => SaveGroupAsync());
