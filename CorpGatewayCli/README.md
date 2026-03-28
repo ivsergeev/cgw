@@ -24,10 +24,10 @@ dotnet publish -c Release -r osx-arm64 --self-contained -o ./dist
 ## Usage
 
 ```bash
-# List available skills (call at session start, paste into agent context)
+# List available skills
 cgw list
 
-# Get full parameter schema for a skill
+# Get parameter schema for a skill
 cgw schema get_employee
 
 # Invoke a skill
@@ -37,20 +37,20 @@ cgw invoke search_employees query="Smith" dept=Engineering
 # Check that CorpGateway is running
 cgw health
 
-# Generate CLAUDE.md for Claude Code integration
-cgw init-claude
+# Generate AGENTS.md + opencode.json for OpenCode
+cgw init-opencode
 ```
 
-## Claude Code integration
+## Agent integration
 
-Run `cgw init-claude` in your project root. It generates a `CLAUDE.md` file that
-Claude Code picks up automatically and knows how to call `cgw`.
+Run `cgw init-opencode` in your project root. It generates:
+- `AGENTS.md` — agent instructions (auto-read by OpenCode)
+- `opencode.json` — tool definitions (`cgw_list`, `cgw_schema`, `cgw_invoke`, `cgw_health`)
 
-Workflow inside Claude Code:
-1. Agent calls `cgw list` to discover available skills
-2. Uses `cgw schema <n>` if it needs parameter details
-3. Calls `cgw invoke <n> [params...]` to fetch data
-4. All output is JSON, piped directly to the agent
+Agent workflow:
+1. `cgw list` — discover available skills
+2. `cgw schema <skill>` — get parameter details if needed
+3. `cgw invoke <skill> key=value ...` — call a skill, output is JSON
 
 ## Configuration
 

@@ -254,10 +254,9 @@ public class LocalApiServer : IDisposable
             }
         }
 
-        // Build headers (skill-defined + Content-Type for body requests)
-        var headers = new Dictionary<string, string>(skill.Headers);
-        if (bodyJson != null && !headers.ContainsKey("Content-Type"))
-            headers["Content-Type"] = "application/json";
+        // Build headers (skill-defined)
+        var headers = new Dictionary<string, string>(skill.Headers, StringComparer.OrdinalIgnoreCase);
+        // Content-Type auto-set is handled in BuildFetchJs (JS-side, case-insensitive check)
 
         // Execute via browser CDP fetch()
         var originOverride = string.IsNullOrWhiteSpace(skill.FetchOrigin) ? null : skill.FetchOrigin.TrimEnd('/');

@@ -195,6 +195,27 @@ public class ChromeCdpService
     {
         try
         {
+            // Re-install monkey-patch in case page navigated (SPA redirect, etc.)
+            await SendSessionCommandAsync(sessionId, "Runtime.evaluate", new
+            {
+                expression = MonkeyPatchJs
+            });
+
+            // If no auth header captured yet, give SPA a moment to make a request
+            var authCheck = await SendSessionCommandAsync(sessionId, "Runtime.evaluate", new
+            {
+                expression = "window._cgwAuthHeader"
+            });
+            var hasAuth = authCheck.TryGetProperty("result", out var ar) &&
+                          ar.TryGetProperty("value", out var av) &&
+                          av.ValueKind == JsonValueKind.String &&
+                          !string.IsNullOrEmpty(av.GetString());
+            if (!hasAuth)
+            {
+                // Wait briefly for SPA to fire a request with Authorization
+                await Task.Delay(2000);
+            }
+
             var fetchJs = BuildFetchJs(url, method, bodyJson, headers);
 
             var evalResult = await SendSessionCommandAsync(sessionId, "Runtime.evaluate", new
@@ -453,9 +474,11 @@ public class ChromeCdpService
             sb.Append("_headers['Content-Type'] = 'application/json'; ");
         }
 
-        // Use credentials: 'include' only when relying on cookies (no Authorization header).
-        // When Authorization is present, 'include' conflicts with Access-Control-Allow-Origin: *
-        sb.Append("const _creds = _authHdr ? 'same-origin' : 'include'; ");
+        // Detect cross-origin: 'include' conflicts with Access-Control-Allow-Origin: *
+        // For cross-origin requests, always use 'same-origin' (no cookies sent cross-origin).
+        // For same-origin, use 'include' to send cookies when no Authorization header is present.
+        sb.Append($"const _isCrossOrigin = new URL({JsonSerializer.Serialize(url)}).origin !== location.origin; ");
+        sb.Append("const _creds = _isCrossOrigin ? 'same-origin' : (_authHdr ? 'same-origin' : 'include'); ");
 
         sb.Append("const resp = await fetch(");
         sb.Append(JsonSerializer.Serialize(url));
