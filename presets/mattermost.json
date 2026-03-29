@@ -1,0 +1,273 @@
+{
+  "Groups": [
+    {
+      "Id": "mattermost",
+      "Name": "Mattermost",
+      "Description": "Mattermost — корпоративный мессенджер (чтение каналов, сообщений, пользователей)",
+      "Color": "#0058CC"
+    }
+  ],
+  "Skills": [
+    {
+      "Id": "00000000-0000-0000-0005-000000000001",
+      "Name": "mm_me",
+      "Description": "Профиль текущего авторизованного пользователя",
+      "GroupId": "mattermost",
+      "Url": "https://MATTERMOST_URL/api/v4/users/me",
+      "HttpMethod": "GET",
+      "Parameters": [],
+      "Headers": {},
+      "BodyTemplate": "",
+      "FetchOrigin": "",
+      "ResponseFilter": "id, username, email, first_name, last_name, nickname, position, roles, locale",
+      "CacheEnabled": false,
+      "CacheTtlSeconds": 60
+    },
+    {
+      "Id": "00000000-0000-0000-0005-000000000002",
+      "Name": "mm_user",
+      "Description": "Профиль пользователя по ID",
+      "GroupId": "mattermost",
+      "Url": "https://MATTERMOST_URL/api/v4/users/{user_id}",
+      "HttpMethod": "GET",
+      "Parameters": [
+        { "Name": "user_id", "Description": "ID пользователя", "Type": "String", "Required": true }
+      ],
+      "Headers": {},
+      "BodyTemplate": "",
+      "FetchOrigin": "",
+      "ResponseFilter": "id, username, email, first_name, last_name, nickname, position, roles",
+      "CacheEnabled": false,
+      "CacheTtlSeconds": 60
+    },
+    {
+      "Id": "00000000-0000-0000-0005-000000000003",
+      "Name": "mm_user_by_username",
+      "Description": "Профиль пользователя по username",
+      "GroupId": "mattermost",
+      "Url": "https://MATTERMOST_URL/api/v4/users/username/{username}",
+      "HttpMethod": "GET",
+      "Parameters": [
+        { "Name": "username", "Description": "Username пользователя", "Type": "String", "Required": true }
+      ],
+      "Headers": {},
+      "BodyTemplate": "",
+      "FetchOrigin": "",
+      "ResponseFilter": "id, username, email, first_name, last_name, nickname, position, roles",
+      "CacheEnabled": false,
+      "CacheTtlSeconds": 60
+    },
+    {
+      "Id": "00000000-0000-0000-0005-000000000004",
+      "Name": "mm_my_teams",
+      "Description": "Список команд текущего пользователя",
+      "GroupId": "mattermost",
+      "Url": "https://MATTERMOST_URL/api/v4/users/me/teams",
+      "HttpMethod": "GET",
+      "Parameters": [],
+      "Headers": {},
+      "BodyTemplate": "",
+      "FetchOrigin": "",
+      "ResponseFilter": "",
+      "CacheEnabled": false,
+      "CacheTtlSeconds": 60
+    },
+    {
+      "Id": "00000000-0000-0000-0005-000000000005",
+      "Name": "mm_team_channels",
+      "Description": "Каналы команды, доступные текущему пользователю",
+      "GroupId": "mattermost",
+      "Url": "https://MATTERMOST_URL/api/v4/users/me/teams/{team_id}/channels",
+      "HttpMethod": "GET",
+      "Parameters": [
+        { "Name": "team_id", "Description": "ID команды (из mm_my_teams)", "Type": "String", "Required": true }
+      ],
+      "Headers": {},
+      "BodyTemplate": "",
+      "FetchOrigin": "",
+      "ResponseFilter": "",
+      "CacheEnabled": false,
+      "CacheTtlSeconds": 60
+    },
+    {
+      "Id": "00000000-0000-0000-0005-000000000006",
+      "Name": "mm_channel",
+      "Description": "Информация о канале по ID",
+      "GroupId": "mattermost",
+      "Url": "https://MATTERMOST_URL/api/v4/channels/{channel_id}",
+      "HttpMethod": "GET",
+      "Parameters": [
+        { "Name": "channel_id", "Description": "ID канала", "Type": "String", "Required": true }
+      ],
+      "Headers": {},
+      "BodyTemplate": "",
+      "FetchOrigin": "",
+      "ResponseFilter": "id, name, display_name, type, header, purpose, team_id, total_msg_count",
+      "CacheEnabled": false,
+      "CacheTtlSeconds": 60
+    },
+    {
+      "Id": "00000000-0000-0000-0005-000000000007",
+      "Name": "mm_channel_by_name",
+      "Description": "Информация о канале по имени и команде",
+      "GroupId": "mattermost",
+      "Url": "https://MATTERMOST_URL/api/v4/teams/{team_id}/channels/name/{channel_name}",
+      "HttpMethod": "GET",
+      "Parameters": [
+        { "Name": "team_id", "Description": "ID команды", "Type": "String", "Required": true },
+        { "Name": "channel_name", "Description": "Имя канала (slug, напр. town-square)", "Type": "String", "Required": true }
+      ],
+      "Headers": {},
+      "BodyTemplate": "",
+      "FetchOrigin": "",
+      "ResponseFilter": "id, name, display_name, type, header, purpose, team_id, total_msg_count",
+      "CacheEnabled": false,
+      "CacheTtlSeconds": 60
+    },
+    {
+      "Id": "00000000-0000-0000-0005-000000000008",
+      "Name": "mm_channel_posts",
+      "Description": "Сообщения канала (последние, с пагинацией)",
+      "GroupId": "mattermost",
+      "Url": "https://MATTERMOST_URL/api/v4/channels/{channel_id}/posts",
+      "HttpMethod": "GET",
+      "Parameters": [
+        { "Name": "channel_id", "Description": "ID канала", "Type": "String", "Required": true },
+        { "Name": "per_page", "Description": "Кол-во сообщений (по умолчанию 60, макс. 200)", "Type": "Integer", "Required": false },
+        { "Name": "page", "Description": "Номер страницы (с 0)", "Type": "Integer", "Required": false }
+      ],
+      "Headers": {},
+      "BodyTemplate": "",
+      "FetchOrigin": "",
+      "ResponseFilter": "",
+      "CacheEnabled": false,
+      "CacheTtlSeconds": 60
+    },
+    {
+      "Id": "00000000-0000-0000-0005-000000000009",
+      "Name": "mm_post",
+      "Description": "Одно сообщение по ID",
+      "GroupId": "mattermost",
+      "Url": "https://MATTERMOST_URL/api/v4/posts/{post_id}",
+      "HttpMethod": "GET",
+      "Parameters": [
+        { "Name": "post_id", "Description": "ID сообщения", "Type": "String", "Required": true }
+      ],
+      "Headers": {},
+      "BodyTemplate": "",
+      "FetchOrigin": "",
+      "ResponseFilter": "id, message, user_id, channel_id, create_at, update_at, type, props, file_ids",
+      "CacheEnabled": false,
+      "CacheTtlSeconds": 60
+    },
+    {
+      "Id": "00000000-0000-0000-0005-000000000010",
+      "Name": "mm_post_thread",
+      "Description": "Тред сообщения (ответы)",
+      "GroupId": "mattermost",
+      "Url": "https://MATTERMOST_URL/api/v4/posts/{post_id}/thread",
+      "HttpMethod": "GET",
+      "Parameters": [
+        { "Name": "post_id", "Description": "ID корневого сообщения треда", "Type": "String", "Required": true }
+      ],
+      "Headers": {},
+      "BodyTemplate": "",
+      "FetchOrigin": "",
+      "ResponseFilter": "",
+      "CacheEnabled": false,
+      "CacheTtlSeconds": 60
+    },
+    {
+      "Id": "00000000-0000-0000-0005-000000000011",
+      "Name": "mm_search_posts",
+      "Description": "Поиск сообщений в команде",
+      "GroupId": "mattermost",
+      "Url": "https://MATTERMOST_URL/api/v4/teams/{team_id}/posts/search",
+      "HttpMethod": "POST",
+      "Parameters": [
+        { "Name": "team_id", "Description": "ID команды", "Type": "String", "Required": true },
+        { "Name": "terms", "Description": "Поисковый запрос (поддерживает операторы: from:, in:, before:, after:)", "Type": "String", "Required": true },
+        { "Name": "is_or_search", "Description": "OR вместо AND между словами", "Type": "Boolean", "Required": false }
+      ],
+      "Headers": {},
+      "BodyTemplate": "{\"terms\": \"{{terms}}\", \"is_or_search\": {{is_or_search}}}",
+      "FetchOrigin": "",
+      "ResponseFilter": "",
+      "CacheEnabled": false,
+      "CacheTtlSeconds": 60
+    },
+    {
+      "Id": "00000000-0000-0000-0005-000000000012",
+      "Name": "mm_channel_members",
+      "Description": "Участники канала",
+      "GroupId": "mattermost",
+      "Url": "https://MATTERMOST_URL/api/v4/channels/{channel_id}/members",
+      "HttpMethod": "GET",
+      "Parameters": [
+        { "Name": "channel_id", "Description": "ID канала", "Type": "String", "Required": true },
+        { "Name": "per_page", "Description": "Кол-во на страницу (по умолчанию 60)", "Type": "Integer", "Required": false },
+        { "Name": "page", "Description": "Номер страницы (с 0)", "Type": "Integer", "Required": false }
+      ],
+      "Headers": {},
+      "BodyTemplate": "",
+      "FetchOrigin": "",
+      "ResponseFilter": "",
+      "CacheEnabled": false,
+      "CacheTtlSeconds": 60
+    },
+    {
+      "Id": "00000000-0000-0000-0005-000000000013",
+      "Name": "mm_user_channels",
+      "Description": "Каналы пользователя в команде (включая личные сообщения)",
+      "GroupId": "mattermost",
+      "Url": "https://MATTERMOST_URL/api/v4/users/{user_id}/teams/{team_id}/channels",
+      "HttpMethod": "GET",
+      "Parameters": [
+        { "Name": "user_id", "Description": "ID пользователя (или me)", "Type": "String", "Required": true },
+        { "Name": "team_id", "Description": "ID команды", "Type": "String", "Required": true }
+      ],
+      "Headers": {},
+      "BodyTemplate": "",
+      "FetchOrigin": "",
+      "ResponseFilter": "",
+      "CacheEnabled": false,
+      "CacheTtlSeconds": 60
+    },
+    {
+      "Id": "00000000-0000-0000-0005-000000000014",
+      "Name": "mm_unread",
+      "Description": "Непрочитанные сообщения текущего пользователя в канале",
+      "GroupId": "mattermost",
+      "Url": "https://MATTERMOST_URL/api/v4/users/me/channels/{channel_id}/unread",
+      "HttpMethod": "GET",
+      "Parameters": [
+        { "Name": "channel_id", "Description": "ID канала", "Type": "String", "Required": true }
+      ],
+      "Headers": {},
+      "BodyTemplate": "",
+      "FetchOrigin": "",
+      "ResponseFilter": "",
+      "CacheEnabled": false,
+      "CacheTtlSeconds": 60
+    },
+    {
+      "Id": "00000000-0000-0000-0005-000000000015",
+      "Name": "mm_team_members",
+      "Description": "Участники команды",
+      "GroupId": "mattermost",
+      "Url": "https://MATTERMOST_URL/api/v4/teams/{team_id}/members",
+      "HttpMethod": "GET",
+      "Parameters": [
+        { "Name": "team_id", "Description": "ID команды", "Type": "String", "Required": true },
+        { "Name": "per_page", "Description": "Кол-во на страницу (по умолчанию 60)", "Type": "Integer", "Required": false },
+        { "Name": "page", "Description": "Номер страницы (с 0)", "Type": "Integer", "Required": false }
+      ],
+      "Headers": {},
+      "BodyTemplate": "",
+      "FetchOrigin": "",
+      "ResponseFilter": "",
+      "CacheEnabled": false,
+      "CacheTtlSeconds": 60
+    }
+  ]
+}
