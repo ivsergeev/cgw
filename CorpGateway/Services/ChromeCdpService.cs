@@ -32,46 +32,8 @@ public class ChromeCdpService
     public int ConnectedPort { get; private set; }
     public event Action<string>? ConnectionLost;
 
-    // JS to install on each origin tab — intercepts Authorization from all fetch/XHR calls
-    private const string MonkeyPatchJs = """
-        (function() {
-            if (window._cgwPatched) return 'already_patched';
-            window._cgwPatched = true;
-            window._cgwAuthHeader = null;
-
-            // Patch fetch
-            const _origFetch = window.fetch;
-            window.fetch = function(...args) {
-                try {
-                    const init = args[1] || {};
-                    const h = init.headers;
-                    if (h) {
-                        let auth = null;
-                        if (h instanceof Headers) { auth = h.get('Authorization'); }
-                        else if (typeof h === 'object') { auth = h['Authorization'] || h['authorization']; }
-                        if (auth) window._cgwAuthHeader = auth;
-                    }
-                } catch(e) {}
-                return _origFetch.apply(this, args);
-            };
-
-            // Patch XMLHttpRequest
-            const _origOpen = XMLHttpRequest.prototype.open;
-            const _origSetHeader = XMLHttpRequest.prototype.setRequestHeader;
-            XMLHttpRequest.prototype.open = function(...args) {
-                this._cgwHeaders = {};
-                return _origOpen.apply(this, args);
-            };
-            XMLHttpRequest.prototype.setRequestHeader = function(name, value) {
-                if (name.toLowerCase() === 'authorization') {
-                    window._cgwAuthHeader = value;
-                }
-                return _origSetHeader.apply(this, arguments);
-            };
-
-            return 'patched';
-        })()
-        """;
+    // Auth header is now captured via CDP Network.requestWillBeSent events
+    // in ReceiveLoopAsync — no JS monkey-patching needed.
 
     public async Task<bool> ConnectAsync(int port)
     {
@@ -154,7 +116,7 @@ public class ChromeCdpService
                 return new CdpFetchResult { Error = "Failed to create browser session (SSO timeout?)" };
 
             // Execute fetch with captured auth header
-            var result = await DoFetchAsync(session.SessionId, url, method, bodyJson, headers);
+            var result = await DoFetchAsync(session, url, method, bodyJson, headers);
 
             // On 401 — token expired. Reload page to trigger SPA token refresh, then retry.
             if (result.StatusCode == 401)
@@ -164,7 +126,7 @@ public class ChromeCdpService
                 {
                     // Session might have been replaced
                     if (_originPool.TryGetValue(origin, out var newSession))
-                        return await DoFetchAsync(newSession.SessionId, url, method, bodyJson, headers);
+                        return await DoFetchAsync(newSession, url, method, bodyJson, headers);
                 }
             }
 
@@ -179,7 +141,7 @@ public class ChromeCdpService
 
                 var newSession = await GetOrCreateOriginSessionAsync(origin);
                 if (newSession != null)
-                    return await DoFetchAsync(newSession.SessionId, url, method, bodyJson, headers);
+                    return await DoFetchAsync(newSession, url, method, bodyJson, headers);
             }
 
             return result;
@@ -190,33 +152,13 @@ public class ChromeCdpService
         }
     }
 
-    private async Task<CdpFetchResult> DoFetchAsync(string sessionId, string url, string method,
+    private async Task<CdpFetchResult> DoFetchAsync(OriginSession session, string url, string method,
         string? bodyJson, Dictionary<string, string>? headers)
     {
+        var sessionId = session.SessionId;
         try
         {
-            // Re-install monkey-patch in case page navigated (SPA redirect, etc.)
-            await SendSessionCommandAsync(sessionId, "Runtime.evaluate", new
-            {
-                expression = MonkeyPatchJs
-            });
-
-            // If no auth header captured yet, give SPA a moment to make a request
-            var authCheck = await SendSessionCommandAsync(sessionId, "Runtime.evaluate", new
-            {
-                expression = "window._cgwAuthHeader"
-            });
-            var hasAuth = authCheck.TryGetProperty("result", out var ar) &&
-                          ar.TryGetProperty("value", out var av) &&
-                          av.ValueKind == JsonValueKind.String &&
-                          !string.IsNullOrEmpty(av.GetString());
-            if (!hasAuth)
-            {
-                // Wait briefly for SPA to fire a request with Authorization
-                await Task.Delay(2000);
-            }
-
-            var fetchJs = BuildFetchJs(url, method, bodyJson, headers);
+            var fetchJs = BuildFetchJs(url, method, bodyJson, headers, session.AuthHeader);
 
             var evalResult = await SendSessionCommandAsync(sessionId, "Runtime.evaluate", new
             {
@@ -255,66 +197,44 @@ public class ChromeCdpService
 
     /// <summary>
     /// Reload the page to trigger SPA token refresh, wait for a new auth header.
+    /// Network.requestWillBeSent events will automatically capture the new Authorization header.
     /// </summary>
     private async Task<bool> RefreshSessionAuthAsync(string origin, OriginSession session)
     {
         try
         {
-            // Clear captured auth header
-            await SendSessionCommandAsync(session.SessionId, "Runtime.evaluate", new
-            {
-                expression = "window._cgwAuthHeader = null"
-            });
+            // Clear captured auth header so we detect a fresh one
+            var oldAuth = session.AuthHeader;
+            session.AuthHeader = null;
 
-            // Reload the page
+            // Reload the page — SPA will re-authenticate
             await SendSessionCommandAsync(session.SessionId, "Page.reload");
 
-            // Wait for the page to land back on origin and get a new auth header
+            // Wait for Network interception to capture a new auth header
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(15));
             while (!cts.Token.IsCancellationRequested)
             {
                 await Task.Delay(800, cts.Token).ContinueWith(_ => { });
 
-                try
-                {
-                    // Re-install monkey-patch (reload clears it)
-                    await SendSessionCommandAsync(session.SessionId, "Runtime.evaluate", new
-                    {
-                        expression = MonkeyPatchJs
-                    });
-
-                    // Check if new auth header captured
-                    var check = await SendSessionCommandAsync(session.SessionId, "Runtime.evaluate", new
-                    {
-                        expression = "window._cgwAuthHeader"
-                    });
-
-                    if (check.TryGetProperty("result", out var r) &&
-                        r.TryGetProperty("value", out var v) &&
-                        v.ValueKind == JsonValueKind.String &&
-                        !string.IsNullOrEmpty(v.GetString()))
-                    {
-                        return true;
-                    }
-                }
-                catch
-                {
-                    // Page might be mid-navigation (SSO redirect), session could break.
-                    // If session died, evict and recreate.
-                    _originPool.TryRemove(origin, out _);
-                    try { await SendCommandAsync("Target.closeTarget", new { targetId = session.TargetId }); }
-                    catch { }
-
-                    var newSession = await GetOrCreateOriginSessionAsync(origin);
-                    return newSession != null;
-                }
+                if (!string.IsNullOrEmpty(session.AuthHeader))
+                    return true;
             }
+
+            // If no new header captured, restore old one (might still be valid)
+            if (string.IsNullOrEmpty(session.AuthHeader) && !string.IsNullOrEmpty(oldAuth))
+                session.AuthHeader = oldAuth;
 
             return false;
         }
         catch
         {
-            return false;
+            // Session died — evict and recreate
+            _originPool.TryRemove(origin, out _);
+            try { await SendCommandAsync("Target.closeTarget", new { targetId = session.TargetId }); }
+            catch { }
+
+            var newSession = await GetOrCreateOriginSessionAsync(origin);
+            return newSession != null;
         }
     }
 
@@ -401,39 +321,23 @@ public class ChromeCdpService
                 return null;
             }
 
-            // Step 4: Install monkey-patch to intercept Authorization headers from SPA.
-            await SendSessionCommandAsync(sessionId, "Runtime.evaluate", new
-            {
-                expression = MonkeyPatchJs
-            });
+            // Step 4: Enable Network interception to capture Authorization headers
+            // from all SPA requests at the browser network layer (more reliable than JS patching).
+            await SendSessionCommandAsync(sessionId, "Network.enable", new { maxTotalBufferSize = 0, maxResourceBufferSize = 0 });
+
+            var session = new OriginSession(targetId, sessionId, origin);
+            _originPool[origin] = session;
 
             // Step 5: Wait for SPA to make a request with Authorization (up to 10s).
-            // If SPA doesn't use Authorization headers, we proceed with cookies only.
+            // The ReceiveLoop captures auth headers via Network.requestWillBeSent events.
             using var authCts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
             while (!authCts.Token.IsCancellationRequested)
             {
                 await Task.Delay(500, authCts.Token).ContinueWith(_ => { });
-
-                try
-                {
-                    var check = await SendSessionCommandAsync(sessionId, "Runtime.evaluate", new
-                    {
-                        expression = "window._cgwAuthHeader"
-                    });
-
-                    if (check.TryGetProperty("result", out var r) &&
-                        r.TryGetProperty("value", out var v) &&
-                        v.ValueKind == JsonValueKind.String &&
-                        !string.IsNullOrEmpty(v.GetString()))
-                    {
-                        break; // Got auth header
-                    }
-                }
-                catch { }
+                if (!string.IsNullOrEmpty(session.AuthHeader))
+                    break; // Got auth header from network interception
             }
 
-            var session = new OriginSession(targetId, sessionId, origin);
-            _originPool[origin] = session;
             return session;
         }
         finally
@@ -446,17 +350,18 @@ public class ChromeCdpService
     /// Build JS that reads the captured auth header and executes fetch() with it.
     /// </summary>
     private static string BuildFetchJs(string url, string method, string? bodyJson,
-        Dictionary<string, string>? headers)
+        Dictionary<string, string>? headers, string? authHeader = null)
     {
         var sb = new StringBuilder();
         sb.Append("(async () => { try { ");
 
-        // Read captured auth header
-        sb.Append("const _authHdr = window._cgwAuthHeader; ");
         sb.Append("const _headers = {}; ");
 
-        // Add captured Authorization if available
-        sb.Append("if (_authHdr) _headers['Authorization'] = _authHdr; ");
+        // Add Authorization header captured from network interception (C#-side)
+        if (!string.IsNullOrEmpty(authHeader))
+        {
+            sb.Append($"_headers['Authorization'] = {JsonSerializer.Serialize(authHeader)}; ");
+        }
 
         // Add explicit headers (skill-defined take precedence)
         if (headers != null)
@@ -477,8 +382,9 @@ public class ChromeCdpService
         // Detect cross-origin: 'include' conflicts with Access-Control-Allow-Origin: *
         // For cross-origin requests, always use 'same-origin' (no cookies sent cross-origin).
         // For same-origin, use 'include' to send cookies when no Authorization header is present.
+        var hasAuth = !string.IsNullOrEmpty(authHeader);
         sb.Append($"const _isCrossOrigin = new URL({JsonSerializer.Serialize(url)}).origin !== location.origin; ");
-        sb.Append("const _creds = _isCrossOrigin ? 'same-origin' : (_authHdr ? 'same-origin' : 'include'); ");
+        sb.Append($"const _creds = _isCrossOrigin ? 'same-origin' : ({(hasAuth ? "'same-origin'" : "'include'")}); ");
 
         sb.Append("const resp = await fetch(");
         sb.Append(JsonSerializer.Serialize(url));
@@ -620,6 +526,36 @@ public class ChromeCdpService
                         }
                     }
 
+                    // Capture Authorization header from network requests
+                    if (eventMethod == "Network.requestWillBeSent" &&
+                        json.TryGetProperty("params", out var netParams) &&
+                        json.TryGetProperty("sessionId", out var sessId))
+                    {
+                        var sid = sessId.GetString() ?? "";
+                        if (netParams.TryGetProperty("request", out var request) &&
+                            request.TryGetProperty("headers", out var hdrs))
+                        {
+                            string? auth = null;
+                            if (hdrs.TryGetProperty("Authorization", out var authVal))
+                                auth = authVal.GetString();
+                            else if (hdrs.TryGetProperty("authorization", out var authVal2))
+                                auth = authVal2.GetString();
+
+                            if (!string.IsNullOrEmpty(auth))
+                            {
+                                // Find the session by sessionId and update its AuthHeader
+                                foreach (var kv in _originPool)
+                                {
+                                    if (kv.Value.SessionId == sid)
+                                    {
+                                        kv.Value.AuthHeader = auth;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+
                     _eventReceived?.Invoke(json);
                 }
             }
@@ -644,7 +580,21 @@ public class ChromeCdpService
     }
 }
 
-public record OriginSession(string TargetId, string SessionId, string Origin);
+public class OriginSession
+{
+    public string TargetId { get; }
+    public string SessionId { get; }
+    public string Origin { get; }
+    /// <summary>Captured Authorization header from SPA network requests. Updated continuously.</summary>
+    public volatile string? AuthHeader;
+
+    public OriginSession(string targetId, string sessionId, string origin)
+    {
+        TargetId = targetId;
+        SessionId = sessionId;
+        Origin = origin;
+    }
+}
 
 public class CdpFetchResult
 {
