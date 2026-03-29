@@ -32,6 +32,9 @@ public class MainViewModel : ReactiveObject
     private string _errorMessage = "";
     private bool _startWithSystem;
     private int _editApiPort;
+    private bool _showConfirmDialog;
+    private string _confirmMessage = "";
+    private Action? _confirmAction;
     private int _editCdpPort;
     private CancellationTokenSource? _autoConnectCts;
 
@@ -173,6 +176,20 @@ public class MainViewModel : ReactiveObject
     public ICommand SaveSettingsCommand { get; }
     public ICommand CopyTokenCommand { get; }
     public ICommand ToggleGroupEnabledCommand { get; }
+    public ICommand ConfirmYesCommand { get; }
+    public ICommand ConfirmNoCommand { get; }
+
+    public bool ShowConfirmDialog
+    {
+        get => _showConfirmDialog;
+        set => this.RaiseAndSetIfChanged(ref _showConfirmDialog, value);
+    }
+
+    public string ConfirmMessage
+    {
+        get => _confirmMessage;
+        set => this.RaiseAndSetIfChanged(ref _confirmMessage, value);
+    }
 
     // ── Constructor ──────────────────────────────────────────────────────────
     public MainViewModel(SkillsRepository repo, LocalApiServer server, AppConfig config,
@@ -238,14 +255,29 @@ public class MainViewModel : ReactiveObject
             if (param is SkillViewModel vm) { ErrorMessage = ""; TestPanel.LoadSkill(vm.Model); EditPanelMode = "Test"; }
         });
 
-        DeleteSkillCommand = new AsyncRelayCommand(async param =>
+        DeleteSkillCommand = new RelayCommand(param =>
         {
-            if (param is SkillViewModel vm) await DeleteSkillAsync(vm);
+            if (param is SkillViewModel vm)
+                ShowConfirm($"Удалить скил «{vm.Name}»?", async () => await DeleteSkillAsync(vm));
         });
 
-        DeleteGroupCommand = new AsyncRelayCommand(async param =>
+        DeleteGroupCommand = new RelayCommand(param =>
         {
-            if (param is SkillGroup g) await DeleteGroupAsync(g);
+            if (param is SkillGroup g)
+                ShowConfirm($"Удалить группу «{g.Name}» и все её скилы?", async () => await DeleteGroupAsync(g));
+        });
+
+        ConfirmYesCommand = new RelayCommand(_ =>
+        {
+            ShowConfirmDialog = false;
+            _confirmAction?.Invoke();
+            _confirmAction = null;
+        });
+
+        ConfirmNoCommand = new RelayCommand(_ =>
+        {
+            ShowConfirmDialog = false;
+            _confirmAction = null;
         });
 
         // CDP commands
@@ -380,6 +412,13 @@ public class MainViewModel : ReactiveObject
                 attempt++;
             }
         }, ct);
+    }
+
+    private void ShowConfirm(string message, Action action)
+    {
+        ConfirmMessage = message;
+        _confirmAction = action;
+        ShowConfirmDialog = true;
     }
 
     private void StopAutoConnect()

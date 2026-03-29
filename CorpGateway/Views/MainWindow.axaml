@@ -159,6 +159,7 @@
   <!-- ════════════════════════════════════════════════════════════════════
        LAYOUT: sidebar | skills | edit panel
        ════════════════════════════════════════════════════════════════════ -->
+  <Panel>
   <Grid ColumnDefinitions="220,1,*,1,400">
 
     <!-- ── Sidebar ──────────────────────────────────────────────────────── -->
@@ -412,6 +413,35 @@
             <TextBlock Text="Через запятую, dot-notation. Если пусто — полный ответ"
                        FontSize="11" Foreground="#9CA3AF" Margin="0,-8,0,8"/>
 
+            <!-- SECTION: Заголовки -->
+            <Rectangle Classes="separator"/>
+            <StackPanel Orientation="Horizontal" Margin="0,16,0,12">
+              <TextBlock Text="HTTP заголовки" FontSize="14" FontWeight="SemiBold" Foreground="#374151"
+                         VerticalAlignment="Center"/>
+              <Button Content="+ Добавить" Classes="ghost" FontSize="12" Padding="10,5"
+                      Margin="10,0,0,0"
+                      Command="{Binding EditSkill.AddHeaderCommand}"/>
+            </StackPanel>
+
+            <ItemsControl ItemsSource="{Binding EditSkill.Headers}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:HeaderViewModel">
+                  <Grid ColumnDefinitions="*,8,*,8,Auto" Margin="0,0,0,6">
+                    <TextBox Grid.Column="0" Text="{Binding Key}"
+                             Watermark="Header name" Classes="field" Margin="0"
+                             FontFamily="Cascadia Code,Consolas,monospace" FontSize="12"/>
+                    <TextBox Grid.Column="2" Text="{Binding Value}"
+                             Watermark="Header value" Classes="field" Margin="0"
+                             FontFamily="Cascadia Code,Consolas,monospace" FontSize="12"/>
+                    <Button Grid.Column="4" Content="✕" FontSize="12"
+                            Classes="danger-subtle" Opacity="1" Padding="8,6"
+                            Command="{ReflectionBinding $parent[Window].DataContext.EditSkill.RemoveHeaderCommand}"
+                            CommandParameter="{Binding}"/>
+                  </Grid>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
             <!-- SECTION: Параметры -->
             <Rectangle Classes="separator"/>
             <StackPanel Orientation="Horizontal" Margin="0,16,0,12">
@@ -600,4 +630,26 @@
     </Grid>
 
   </Grid>
+
+  <!-- ═══ Confirmation dialog overlay ═══════════════════════════════════ -->
+  <Panel IsVisible="{Binding ShowConfirmDialog}">
+    <Border Background="#80000000" />
+    <Border Background="White" CornerRadius="12" Padding="28,24"
+            HorizontalAlignment="Center" VerticalAlignment="Center"
+            MinWidth="320" MaxWidth="420"
+            BoxShadow="0 8 32 #40000000">
+      <StackPanel Spacing="16">
+        <TextBlock Text="{Binding ConfirmMessage}" FontSize="15" Foreground="#1F2937"
+                   TextWrapping="Wrap" TextAlignment="Center"/>
+        <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Center">
+          <Button Content="Удалить" Classes="danger" Padding="20,8"
+                  Command="{Binding ConfirmYesCommand}"/>
+          <Button Content="Отмена" Classes="ghost" Padding="20,8"
+                  Command="{Binding ConfirmNoCommand}"/>
+        </StackPanel>
+      </StackPanel>
+    </Border>
+  </Panel>
+
+  </Panel>
 </Window>

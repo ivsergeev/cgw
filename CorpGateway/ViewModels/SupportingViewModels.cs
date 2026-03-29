@@ -75,6 +75,16 @@ public class ParameterViewModel : ReactiveObject
     };
 }
 
+// ── Header row VM ────────────────────────────────────────────────────────
+public class HeaderViewModel : ReactiveObject
+{
+    private string _key = "";
+    private string _value = "";
+
+    public string Key { get => _key; set => this.RaiseAndSetIfChanged(ref _key, value); }
+    public string Value { get => _value; set => this.RaiseAndSetIfChanged(ref _value, value); }
+}
+
 // ── Edit Skill form VM ─────────────────────────────────────────────────────
 public class EditSkillViewModel : ReactiveObject
 {
@@ -114,6 +124,7 @@ public class EditSkillViewModel : ReactiveObject
     public bool HasBody => HttpMethod is "POST" or "PUT" or "PATCH";
 
     public ObservableCollection<ParameterViewModel> Parameters { get; } = new();
+    public ObservableCollection<HeaderViewModel> Headers { get; } = new();
     public string[] HttpMethods { get; } = { "GET", "POST", "PUT", "PATCH", "DELETE" };
 
     public string PreviewSignature
@@ -140,6 +151,8 @@ public class EditSkillViewModel : ReactiveObject
 
     public System.Windows.Input.ICommand AddParameterCommand { get; }
     public System.Windows.Input.ICommand RemoveParameterCommand { get; }
+    public System.Windows.Input.ICommand AddHeaderCommand { get; }
+    public System.Windows.Input.ICommand RemoveHeaderCommand { get; }
 
     public EditSkillViewModel(SkillsRepository _)
     {
@@ -155,6 +168,12 @@ public class EditSkillViewModel : ReactiveObject
             this.RaisePropertyChanged(nameof(PreviewSignature));
         });
 
+        AddHeaderCommand = new RelayCommand(_ => Headers.Add(new HeaderViewModel()));
+        RemoveHeaderCommand = new RelayCommand(param =>
+        {
+            if (param is HeaderViewModel h) Headers.Remove(h);
+        });
+
         Parameters.CollectionChanged += (_, _) =>
             this.RaisePropertyChanged(nameof(PreviewSignature));
     }
@@ -165,6 +184,7 @@ public class EditSkillViewModel : ReactiveObject
         Url = ""; HttpMethod = "GET";
         BodyTemplate = ""; FetchOrigin = ""; ResponseFilter = "";
         Parameters.Clear();
+        Headers.Clear();
     }
 
     public void LoadFrom(Skill s)
@@ -174,6 +194,8 @@ public class EditSkillViewModel : ReactiveObject
         FetchOrigin = s.FetchOrigin; ResponseFilter = s.ResponseFilter;
         Parameters.Clear();
         foreach (var p in s.Parameters) Parameters.Add(ParameterViewModel.FromModel(p));
+        Headers.Clear();
+        foreach (var kv in s.Headers) Headers.Add(new HeaderViewModel { Key = kv.Key, Value = kv.Value });
     }
 
     public Skill ToModel()
@@ -189,6 +211,11 @@ public class EditSkillViewModel : ReactiveObject
             CacheEnabled = false, CacheTtlSeconds = 60
         };
         foreach (var p in Parameters) skill.Parameters.Add(p.ToModel());
+        foreach (var h in Headers)
+        {
+            if (!string.IsNullOrWhiteSpace(h.Key))
+                skill.Headers[h.Key.Trim()] = h.Value?.Trim() ?? "";
+        }
         return skill;
     }
 }
