@@ -31,10 +31,18 @@ public class GatewayClient : IDisposable
         return await ParseJsonAsync(resp);
     }
 
-    // GET /skills  → compact text block
-    public async Task<string> ListCompactAsync()
+    // GET /groups  → list of enabled groups
+    public async Task<JsonNode?> GroupsAsync()
     {
-        var resp = await _http.GetAsync("/skills");
+        var resp = await _http.GetAsync("/groups");
+        return await ParseJsonAsync(resp);
+    }
+
+    // GET /skills  → compact text block (optionally filtered by group)
+    public async Task<string> ListCompactAsync(string? groupId = null)
+    {
+        var url = groupId != null ? $"/skills?group={Uri.EscapeDataString(groupId)}" : "/skills";
+        var resp = await _http.GetAsync(url);
         resp.EnsureSuccessStatusCode();
         var json = await ParseJsonAsync(resp);
         return json?["skills"]?.GetValue<string>() ?? "";

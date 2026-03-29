@@ -11,7 +11,8 @@ namespace CorpGatewayCli;
 /// cgw - CorpGateway CLI
 ///
 /// Commands:
-///   cgw list                         List all skills (compact)
+///   cgw groups                       List available groups
+///   cgw list [--group &lt;id&gt;]          List skills (all or by group)
 ///   cgw schema &lt;skill&gt;              Parameter schema for a skill
 ///   cgw invoke &lt;skill&gt; [key=val ...] Invoke a skill
 ///   cgw health                       Check gateway status
@@ -72,6 +73,7 @@ class Program
             return command switch
             {
                 "health" => await HealthCmd(client, jsonOutput),
+                "groups" => await GroupsCmd(client),
                 "list"   => await ListCmd(client, positional),
                 "schema" => await SchemaCmd(client, positional),
                 "invoke" => await InvokeCmd(client, positional),
@@ -109,10 +111,36 @@ class Program
         return 0;
     }
 
-    // list command
+    // groups command
+    static async Task<int> GroupsCmd(GatewayClient client)
+    {
+        var result = await client.GroupsAsync();
+        if (result?["groups"] is JsonArray groups)
+        {
+            Console.WriteLine("# Available groups");
+            foreach (var g in groups)
+            {
+                var id = g?["id"]?.GetValue<string>() ?? "";
+                var name = g?["name"]?.GetValue<string>() ?? "";
+                var desc = g?["description"]?.GetValue<string>() ?? "";
+                Console.WriteLine(!string.IsNullOrEmpty(desc)
+                    ? $"{id}  // {desc}"
+                    : $"{id}  // {name}");
+            }
+        }
+        return 0;
+    }
+
+    // list command (optional: --group <id>)
     static async Task<int> ListCmd(GatewayClient client, List<string> args)
     {
-        var compact = await client.ListCompactAsync();
+        string? groupId = null;
+        for (int i = 1; i < args.Count; i++)
+        {
+            if (args[i] == "--group" && i + 1 < args.Count)
+            { groupId = args[++i]; break; }
+        }
+        var compact = await client.ListCompactAsync(groupId);
         Console.Write(compact);
         return 0;
     }
@@ -185,12 +213,16 @@ Commit it to your repository so all OpenCode sessions pick it up automatically.
   "$schema": "https://opencode.ai/config.schema.json",
   "instructions": ["AGENTS.md"],
   "tools": {
+    "cgw_groups": {
+      "description": "List available skill groups with descriptions. Call first if many groups.",
+      "command": "cgw groups"
+    },
     "cgw_list": {
-      "description": "List all available corporate skills. Call at session start.",
+      "description": "List available skills (all or filtered). Optional: --group <id>.",
       "command": "cgw list"
     },
     "cgw_schema": {
-      "description": "Full JSON schema for a skill. Argument: skill name.",
+      "description": "Parameter schema for a skill. Argument: skill name.",
       "command": "cgw schema"
     },
     "cgw_invoke": {
@@ -209,7 +241,7 @@ Commit it to your repository so all OpenCode sessions pick it up automatically.
         Console.WriteLine($"Generated: {opencodeJson}");
         Console.WriteLine();
         Console.WriteLine("OpenCode reads AGENTS.md as system instructions automatically.");
-        Console.WriteLine("cgw_list / cgw_schema / cgw_invoke / cgw_health are registered as tools.");
+        Console.WriteLine("cgw_groups / cgw_list / cgw_schema / cgw_invoke / cgw_health are registered as tools.");
         return 0;
     }
 
@@ -222,7 +254,9 @@ You have access to corporate internal APIs via the `cgw` CLI.
 ## Commands
 
 ```bash
-cgw list                              # discover available skills
+cgw groups                            # list available groups
+cgw list                              # list all skills
+cgw list --group <id>                 # list skills in a specific group
 cgw schema <skill>                    # parameter details for a skill
 cgw invoke <skill> key=value ...      # call a skill, returns JSON
 cgw health                            # check if gateway is running
@@ -230,10 +264,11 @@ cgw health                            # check if gateway is running
 
 ## Workflow
 
-1. Run `cgw list` at session start to see available skills
-2. Run `cgw schema <skill>` if you need parameter details
-3. Run `cgw invoke <skill> key=value ...` to call a skill
-4. Omit optional parameters; never pass empty strings
+1. Run `cgw groups` to see available groups, or `cgw list` to see all skills
+2. If many groups, use `cgw list --group <id>` to focus on a specific group
+3. Run `cgw schema <skill>` if you need parameter details
+4. Run `cgw invoke <skill> key=value ...` to call a skill
+5. Omit optional parameters; never pass empty strings
 
 ## Rules
 
@@ -249,7 +284,8 @@ cgw health                            # check if gateway is running
 cgw - CorpGateway CLI
 
 Commands:
-  cgw list                        List available skills
+  cgw groups                      List available groups
+  cgw list [--group <id>]         List skills (all or filtered by group)
   cgw schema <skill>              Parameter schema for a skill
   cgw invoke <skill> [k=v ...]    Invoke a skill; returns JSON
   cgw health                      Check gateway status

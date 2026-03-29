@@ -85,10 +85,35 @@ public class LocalApiServer : IDisposable
         {
             var path = req.Url?.AbsolutePath ?? "/";
 
-            // GET /skills  - list all skills (compact format for agent)
+            // GET /groups  - list enabled groups (compact, for agent to choose)
+            if (req.HttpMethod == "GET" && path == "/groups")
+            {
+                var groups = _repo.GetGroups().Where(g => g.Enabled).Select(g => new
+                {
+                    id = g.Id,
+                    name = g.Name,
+                    description = g.Description
+                });
+                await WriteJsonAsync(resp, 200, new { groups });
+                return;
+            }
+
+            // GET /skills  - list skills (compact format for agent)
+            // Optional: ?group=<id> to filter by group
             if (req.HttpMethod == "GET" && path == "/skills")
             {
-                var compact = _repo.ExportCompact();
+                string? groupId = null;
+                var qs = req.Url?.Query;
+                if (!string.IsNullOrEmpty(qs))
+                {
+                    foreach (var part in qs.TrimStart('?').Split('&'))
+                    {
+                        var kv = part.Split('=', 2);
+                        if (kv.Length == 2 && kv[0] == "group")
+                        { groupId = Uri.UnescapeDataString(kv[1]); break; }
+                    }
+                }
+                var compact = _repo.ExportCompact(groupId);
                 await WriteJsonAsync(resp, 200, new { skills = compact });
                 return;
             }
