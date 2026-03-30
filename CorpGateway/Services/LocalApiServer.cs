@@ -279,8 +279,33 @@ public class LocalApiServer : IDisposable
             }
         }
 
-        // Build headers (skill-defined)
+        // Build headers (skill-defined) with {{param}} substitution
         var headers = new Dictionary<string, string>(skill.Headers, StringComparer.OrdinalIgnoreCase);
+        var paramDefs2 = skill.Parameters.ToDictionary(p => p.Name, StringComparer.OrdinalIgnoreCase);
+        var headerKeys = headers.Keys.ToList();
+        foreach (var key in headerKeys)
+        {
+            var val = headers[key];
+            if (!val.Contains("{{")) continue;
+            foreach (var kv in remainingParams)
+            {
+                var placeholder = $"{{{{{kv.Key}}}}}";
+                if (!val.Contains(placeholder)) continue;
+                var paramType = paramDefs2.TryGetValue(kv.Key, out var def) ? def.Type : ParameterType.String;
+                var sub = paramType switch
+                {
+                    ParameterType.Integer => long.TryParse(kv.Value.Trim(), out var iv) ? iv.ToString() : "0",
+                    ParameterType.Float => double.TryParse(kv.Value.Trim(),
+                        System.Globalization.NumberStyles.Float,
+                        System.Globalization.CultureInfo.InvariantCulture, out var fv)
+                        ? fv.ToString(System.Globalization.CultureInfo.InvariantCulture) : "0",
+                    ParameterType.Boolean => kv.Value.Trim().ToLowerInvariant() is "true" or "1" or "yes" ? "true" : "false",
+                    _ => JsonSerializer.Serialize(kv.Value)[1..^1] // JSON-escape for strings
+                };
+                val = val.Replace(placeholder, sub);
+            }
+            headers[key] = val;
+        }
         // Content-Type auto-set is handled in BuildFetchJs (JS-side, case-insensitive check)
 
         // Execute via browser CDP fetch()
