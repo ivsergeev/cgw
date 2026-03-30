@@ -9,6 +9,8 @@ CLI Agent ──► localhost:9876/invoke ──► CorpGateway ──► Corpor
                   (bearer token)          (tray app)       (via browser session)
 ```
 
+The gateway proxies all requests through Chrome via CDP (DevTools Protocol), reusing the browser's existing auth session (cookies, tokens). No credentials are stored.
+
 ## Build & Run
 
 **Prerequisites:** .NET 8 SDK
@@ -19,21 +21,20 @@ dotnet restore
 dotnet run
 ```
 
-**Publish (Windows self-contained):**
+**Publish (cross-platform):**
 ```bash
-dotnet publish -c Release -r win-x64 --self-contained -o ./publish
+dotnet publish -c Release -r win-x64 --self-contained -o ./publish    # Windows
+dotnet publish -c Release -r osx-arm64 --self-contained -o ./publish  # macOS
+dotnet publish -c Release -r linux-x64 --self-contained -o ./publish  # Linux
 ```
 
-**Publish (macOS):**
-```bash
-dotnet publish -c Release -r osx-arm64 --self-contained -o ./publish
-```
+**Installers:** see `installer/build.ps1` (Windows) or `installer/build.sh` (Linux/macOS).
 
 ## Configuration
 
-Config is stored in `%APPDATA%/CorpGateway/config.json` (Windows) or `~/.config/CorpGateway/config.json` (Linux/macOS).
+Config: `%APPDATA%/CorpGateway/config.json` (Windows) or `~/.config/CorpGateway/config.json` (Linux/macOS).
 
-Settings can also be changed from the UI via the **⚙ Настройки** panel.
+Also editable from the UI via the **⚙ Настройки** panel.
 
 ```json
 {
@@ -46,8 +47,6 @@ Settings can also be changed from the UI via the **⚙ Настройки** pane
 }
 ```
 
-The API token is auto-generated on first run. Copy it from the Settings panel or the tray menu.
-
 ## Local API Reference
 
 All requests require: `Authorization: Bearer <token>`
@@ -57,22 +56,40 @@ All requests require: `Authorization: Bearer <token>`
 { "status": "ok", "skills": 5, "cdp": "connected" }
 ```
 
-### `GET /skills`
-Returns compact skill list for agent context:
-```
-# Available skills
-get_employee(id:int)  // Returns employee record by ID
-search_orders(query:str, from:date?)  // Search orders
-```
-
-### `GET /skills/{name}/schema`
-Returns parameter schema for a skill (name, description, parameters with types):
+### `GET /groups`
+List enabled skill groups:
 ```json
 {
-  "name": "get_employee",
-  "description": "Returns employee record by ID",
+  "groups": [
+    { "id": "jira", "name": "Jira", "description": "Jira REST API" },
+    { "id": "mm", "name": "Mattermost", "description": "Mattermost messenger" }
+  ]
+}
+```
+
+### `GET /skills`
+Compact skill list for agent context (grouped by enabled groups):
+```
+# Available skills
+
+## Jira REST API
+jira_issue(key:str)  // Issue details by key
+jira_search(jql:str, maxResults:int?)  // Search issues
+
+## Mattermost messenger
+mm_channel_posts(channel_id:str, per_page:int?)  // Channel messages
+```
+
+Optional query parameter: `?group=<id>` to filter by group.
+
+### `GET /skills/{name}/schema`
+Parameter schema for a skill:
+```json
+{
+  "name": "jira_issue",
+  "description": "Issue details by key",
   "parameters": [
-    { "name": "id", "type": "integer", "required": true, "description": "Employee ID" }
+    { "name": "key", "type": "string", "required": true, "description": "Issue key" }
   ]
 }
 ```
@@ -81,19 +98,49 @@ Returns parameter schema for a skill (name, description, parameters with types):
 Execute a skill:
 ```json
 {
-  "skill": "get_employee",
-  "parameters": { "id": "42" }
+  "skill": "jira_issue",
+  "parameters": { "key": "PROJ-123" }
 }
 ```
 
 Response: the JSON response from the corporate endpoint, proxied as-is.
 
+## Skills
+
+Skills are organized into groups. Each group can be enabled/disabled from the UI — disabled groups are hidden from API clients.
+
+### Parameter substitution
+
+Parameters are substituted into three places:
+- **URL path:** `{param}` in URL (e.g., `/api/issues/{key}`)
+- **Body template:** `{{param}}` in JSON body (POST/PUT/PATCH)
+- **Header values:** `{{param}}` in custom HTTP headers
+
+Type-aware substitution: integers and floats are inserted unquoted, booleans normalized to `true`/`false`, strings JSON-escaped.
+
+### Custom headers
+
+Skills support custom HTTP headers (editable in UI). Header values support `{{param}}` templates — useful for APIs that pass data via headers (e.g., OWA `X-OWA-UrlPostData`).
+
+### Presets
+
+Ready-made skill sets are available in `presets/`:
+- `jira.json` — Jira REST API
+- `confluence.json` — Confluence REST API
+- `gitlab.json` — GitLab API
+- `mattermost.json` — Mattermost API
+- `outlook.json` — Microsoft Outlook (Graph API)
+
+Import via the UI (Импорт button).
+
 ## Agent integration
 
-Use the `cgw` CLI tool. Run `cgw init-opencode` to generate agent instructions automatically, or see `CorpGatewayCli/README.md`.
+Use the `cgw` CLI tool. Run `cgw init-opencode` to generate agent instructions, or see `CorpGatewayCli/README.md`.
 
 ## Security notes
 
-- The API only listens on `localhost` — not accessible from the network
-- Bearer token is required for every request
-- CDP connection uses existing browser session — no credentials are stored
+- API listens on `localhost` only — not accessible from the network
+- Bearer token required for every request
+- CDP uses existing browser session — no credentials stored
+- Auth headers captured via CDP Network interception (not JS injection)
+- Groups can be disabled to hide skills from agents
