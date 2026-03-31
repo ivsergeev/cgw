@@ -6,7 +6,9 @@
   "permissions": [
     "cookies",
     "storage",
-    "webRequest"
+    "webRequest",
+    "scripting",
+    "tabs"
   ],
   "host_permissions": [
     "https://*/*",
