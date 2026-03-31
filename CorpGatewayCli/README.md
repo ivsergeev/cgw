@@ -49,6 +49,24 @@ cgw init-opencode
 
 ## Agent integration
 
+### MCP (recommended)
+
+CorpGateway includes a built-in MCP server — no CLI needed. Add to `opencode.json`:
+
+```json
+{
+  "mcp": {
+    "corp": {
+      "type": "remote",
+      "url": "http://localhost:9876/mcp",
+      "headers": { "Authorization": "Bearer <token>" }
+    }
+  }
+}
+```
+
+### CLI (alternative)
+
 Run `cgw init-opencode` in your project root. It generates:
 - `AGENTS.md` — agent instructions (auto-read by OpenCode)
 - `opencode.json` — tool definitions (`cgw_groups`, `cgw_list`, `cgw_schema`, `cgw_invoke`, `cgw_health`)

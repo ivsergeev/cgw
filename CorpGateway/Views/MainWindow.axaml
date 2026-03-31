@@ -604,6 +604,17 @@
             <TextBlock Text="Порт Chrome с флагом --remote-debugging-port"
                        FontSize="11" Foreground="#9CA3AF" Margin="0,-8,0,8"/>
 
+            <!-- MCP -->
+            <Rectangle Classes="separator"/>
+            <TextBlock Text="MCP сервер" Classes="section"/>
+
+            <TextBlock Text="Инструкция для агента" Classes="label"/>
+            <TextBox Text="{Binding EditMcpInstructions}" Classes="field"
+                     AcceptsReturn="True" TextWrapping="Wrap" MinHeight="120"
+                     FontFamily="Cascadia Code,Consolas,monospace" FontSize="12"/>
+            <TextBlock Text="Передаётся агенту при подключении к MCP (поле instructions)"
+                       FontSize="11" Foreground="#9CA3AF" Margin="0,-8,0,8"/>
+
             <!-- System -->
             <Rectangle Classes="separator"/>
             <TextBlock Text="Система" Classes="section"/>

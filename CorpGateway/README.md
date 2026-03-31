@@ -135,12 +135,38 @@ Import via the UI (Импорт button).
 
 ## Agent integration
 
-Use the `cgw` CLI tool. Run `cgw init-opencode` to generate agent instructions, or see `CorpGatewayCli/README.md`.
+### MCP (recommended)
+
+CorpGateway has a built-in MCP server at `POST /mcp` (Streamable HTTP transport).
+
+Add to your agent config (`opencode.json`, `.cursor/mcp.json`, etc.):
+
+```json
+{
+  "mcp": {
+    "corp": {
+      "type": "remote",
+      "url": "http://localhost:9876/mcp",
+      "headers": {
+        "Authorization": "Bearer <token from settings>"
+      }
+    }
+  }
+}
+```
+
+The agent receives 5 meta-tools: `cgw_groups`, `cgw_list`, `cgw_schema`, `cgw_invoke`, `cgw_health`.
+
+MCP instructions (sent to the agent on connect) can be customized in **⚙ Настройки → MCP сервер**.
+
+### CLI
+
+Alternatively, use the `cgw` CLI tool. Run `cgw init-opencode` to generate agent instructions, or see `CorpGatewayCli/README.md`.
 
 ## Security notes
 
 - API listens on `localhost` only — not accessible from the network
-- Bearer token required for every request
+- Bearer token required for every request (HTTP API and MCP)
 - CDP uses existing browser session — no credentials stored
 - Auth headers captured via CDP Network interception (not JS injection)
 - Groups can be disabled to hide skills from agents

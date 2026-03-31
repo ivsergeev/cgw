@@ -9,6 +9,7 @@ public class GatewayConfig
 {
     public int ApiPort { get; set; } = 9876;
     public string ApiToken { get; set; } = "";
+    public string McpInstructions { get; set; } = "";
 
     private static readonly string DefaultPath = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),

@@ -36,6 +36,7 @@ public class MainViewModel : ReactiveObject
     private string _confirmMessage = "";
     private Action? _confirmAction;
     private int _editCdpPort;
+    private string _editMcpInstructions = "";
     private CancellationTokenSource? _autoConnectCts;
 
     public ObservableCollection<SkillGroup> Groups { get; } = new();
@@ -150,6 +151,12 @@ public class MainViewModel : ReactiveObject
     {
         get => _editCdpPort;
         set => this.RaiseAndSetIfChanged(ref _editCdpPort, value);
+    }
+
+    public string EditMcpInstructions
+    {
+        get => _editMcpInstructions;
+        set => this.RaiseAndSetIfChanged(ref _editMcpInstructions, value);
     }
 
     // ── Sub-ViewModels ───────────────────────────────────────────────────────
@@ -317,6 +324,7 @@ public class MainViewModel : ReactiveObject
         {
             EditApiPort = _config.ApiPort;
             EditCdpPort = _config.CdpPort;
+            EditMcpInstructions = _config.McpInstructions;
             ErrorMessage = "";
             EditPanelMode = "Settings";
         });
@@ -330,6 +338,7 @@ public class MainViewModel : ReactiveObject
 
             _config.ApiPort = EditApiPort;
             _config.CdpPort = EditCdpPort;
+            _config.McpInstructions = EditMcpInstructions;
             CdpPort = EditCdpPort;
             try { await _config.SaveAsync(); } catch { }
             ErrorMessage = "";

@@ -17,6 +17,22 @@ public class AppConfig
     public int CdpPort { get; set; } = 9222;
     public bool CdpAutoConnect { get; set; } = true;
 
+    // MCP server instructions (sent to agent on initialize)
+    public string McpInstructions { get; set; } = """
+        Corporate API gateway for accessing internal corporate systems.
+
+        Workflow:
+        1. Call cgw_groups to see available groups
+        2. Call cgw_list (optionally with group filter) to see skills
+        3. Call cgw_schema if you need parameter details
+        4. Call cgw_invoke to execute a skill
+
+        Rules:
+        - Only call skills from cgw_list. Never guess skill names.
+        - Always call cgw_invoke for fresh data; do not cache results.
+        - Confirm with user before calling write operations.
+        """;
+
     private static readonly string ConfigPath = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
         "CorpGateway", "config.json");

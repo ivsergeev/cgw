@@ -21,16 +21,18 @@ public class LocalApiServer : IDisposable
     private readonly HttpListener _listener = new();
     private readonly SkillsRepository _repo;
     private readonly ChromeCdpService? _cdpService;
+    private readonly McpHandler _mcpHandler;
     private CancellationTokenSource? _cts;
     private string _bearerToken = "";
 
     public int Port { get; private set; }
     public bool IsRunning { get; private set; }
 
-    public LocalApiServer(SkillsRepository repo, ChromeCdpService? cdpService = null)
+    public LocalApiServer(SkillsRepository repo, ChromeCdpService? cdpService = null, AppConfig? config = null)
     {
         _repo = repo;
         _cdpService = cdpService;
+        _mcpHandler = new McpHandler(repo, this, cdpService, config ?? new AppConfig());
     }
 
     public void Start(int port, string bearerToken)
@@ -84,6 +86,31 @@ public class LocalApiServer : IDisposable
         try
         {
             var path = req.Url?.AbsolutePath ?? "/";
+
+            // POST /mcp  - MCP Streamable HTTP endpoint
+            if (req.HttpMethod == "POST" && path == "/mcp")
+            {
+                using var reader = new StreamReader(req.InputStream, Encoding.UTF8);
+                var body = await reader.ReadToEndAsync();
+                var (status, responseJson) = await _mcpHandler.HandleAsync(body);
+
+                if (responseJson == null)
+                {
+                    // Notification → 202 Accepted with no body
+                    resp.StatusCode = status;
+                    resp.ContentLength64 = 0;
+                    resp.OutputStream.Close();
+                    return;
+                }
+
+                resp.StatusCode = status;
+                resp.ContentType = "application/json";
+                var bytes = Encoding.UTF8.GetBytes(responseJson);
+                resp.ContentLength64 = bytes.Length;
+                await using var output = resp.OutputStream;
+                await output.WriteAsync(bytes);
+                return;
+            }
 
             // GET /groups  - list enabled groups (compact, for agent to choose)
             if (req.HttpMethod == "GET" && path == "/groups")
@@ -184,7 +211,7 @@ public class LocalApiServer : IDisposable
         }
     }
 
-    private async Task<(int StatusCode, object Body)> InvokeSkillAsync(InvokeRequest req)
+    internal async Task<(int StatusCode, object Body)> InvokeSkillAsync(InvokeRequest req)
     {
         var skill = _repo.GetEnabledSkills().FirstOrDefault(s =>
             s.Name.Equals(req.Skill, StringComparison.OrdinalIgnoreCase));

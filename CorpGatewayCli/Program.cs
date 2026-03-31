@@ -246,7 +246,13 @@ Commit it to your repository so all OpenCode sessions pick it up automatically.
     }
 
     // Shared instruction content used by init commands
-    static string BuildAgentInstructions(GatewayConfig cfg, string header, string footer) => $$"""
+    static string BuildAgentInstructions(GatewayConfig cfg, string header, string footer)
+    {
+        var customInstructions = string.IsNullOrWhiteSpace(cfg.McpInstructions)
+            ? ""
+            : $"\n## Additional instructions\n\n{cfg.McpInstructions.Trim()}\n";
+
+        return $$"""
 {{header}}
 
 You have access to corporate internal APIs via the `cgw` CLI.
@@ -276,9 +282,10 @@ cgw health                            # check if gateway is running
 - Always call `cgw invoke` for fresh data; do not cache results.
 - Confirm with the user before calling write operations.
 - Report errors to the user verbatim.
-
+{{customInstructions}}
 {{footer}}
 """;
+    }
 
     static void PrintHelp() => Console.WriteLine("""
 cgw - CorpGateway CLI

@@ -38,7 +38,7 @@ public class App : Application
             _config = await AppConfig.LoadAsync();
             _repo = new SkillsRepository();
             _cdpService = new ChromeCdpService();
-            _server = new LocalApiServer(_repo, _cdpService);
+            _server = new LocalApiServer(_repo, _cdpService, _config);
 
             await _repo.LoadAsync();
             _server.Start(_config.ApiPort, _config.ApiToken);
