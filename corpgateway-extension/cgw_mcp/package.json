@@ -1,0 +1,17 @@
+{
+  "name": "cgw-mcp",
+  "version": "1.0.0",
+  "description": "CorpGateway MCP Server — HTTP + WebSocket daemon for Chrome extension",
+  "main": "index.js",
+  "bin": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "ws": "^8.20.0"
+  }
+}
