@@ -2,16 +2,17 @@
 //
 // Mirrors ChromeCdpService flow from tray app:
 // - Maintains a pool of background tabs (one per origin)
-// - Executes fetch() in the context of the origin tab (has cookies/session)
-// - Captures Authorization headers via webRequest
+// - Injects fetch/XHR interceptor to capture Authorization headers
+//   (mirrors CDP Network.requestWillBeSent)
+// - Executes fetch() in MAIN world (mirrors CDP Runtime.evaluate)
 // - On 401: reloads page, waits for new auth header, retries
 // - On network error: evicts tab, creates fresh session, retries
 
 import { getEnabledSkills } from './storage.js';
 
-// ── Auth header cache (populated by webRequest in background.js) ──
+// ── Auth header cache ────────────────────────────────────────
 
-const authCache = new Map(); // origin → Authorization header
+const authCache = new Map(); // origin → Authorization header value
 
 export function setAuthHeader(origin, value) {
   authCache.set(origin, value);
@@ -24,12 +25,12 @@ export function getAuthHeader(origin) {
 // ── Origin tab pool ────────────────────────────────────────
 
 const originPool = new Map(); // origin → { tabId }
-const POOL_TIMEOUT = 25000;   // 25s to wait for tab to land on origin (matches CDP)
-const AUTH_WAIT_TIMEOUT = 10000; // 10s to wait for auth header after tab ready
-const AUTH_REFRESH_TIMEOUT = 15000; // 15s to wait for auth after reload (matches CDP)
+const POOL_TIMEOUT = 25000;
+const AUTH_WAIT_TIMEOUT = 10000;
+const AUTH_REFRESH_TIMEOUT = 15000;
 
-// Lock to prevent concurrent tab creation for the same origin (matches CDP _poolLock)
-const poolLocks = new Map(); // origin → Promise
+// Lock to prevent concurrent tab creation for the same origin (mirrors CDP _poolLock)
+const poolLocks = new Map();
 
 async function withPoolLock(origin, fn) {
   while (poolLocks.has(origin)) {
@@ -46,6 +47,55 @@ async function withPoolLock(origin, fn) {
   }
 }
 
+// ── Auth interceptor registration ────────────────────────────
+// Registers a content script that patches fetch/XHR in MAIN world
+// at document_start — BEFORE any page scripts run.
+// This mirrors CDP Network.enable + Network.requestWillBeSent.
+
+const registeredOrigins = new Set();
+
+async function ensureAuthInterceptor(origin) {
+  if (registeredOrigins.has(origin)) return;
+
+  const scriptId = 'cgw-auth-' + origin.replace(/[^a-z0-9]/gi, '_');
+  const urlPattern = origin + '/*';
+
+  try {
+    await chrome.scripting.unregisterContentScripts({ ids: [scriptId] });
+  } catch {}
+
+  await chrome.scripting.registerContentScripts([{
+    id: scriptId,
+    matches: [urlPattern],
+    js: ['lib/auth-interceptor.js'],
+    runAt: 'document_start',
+    world: 'MAIN',
+    allFrames: false
+  }]);
+
+  registeredOrigins.add(origin);
+  console.log(`[CGW] Auth interceptor registered for ${origin}`);
+}
+
+// Read captured auth from origin tab's window.__cgw_auth
+async function readCapturedAuth(tabId, origin) {
+  try {
+    const results = await chrome.scripting.executeScript({
+      target: { tabId },
+      world: 'MAIN',
+      func: () => window.__cgw_auth || null
+    });
+    const auth = results?.[0]?.result;
+    if (auth) {
+      authCache.set(origin, auth);
+      return auth;
+    }
+  } catch {}
+  return null;
+}
+
+// ── Origin tab management ────────────────────────────────────
+
 async function getOrCreateOriginTab(origin) {
   return withPoolLock(origin, async () => {
     // Check existing tab
@@ -54,13 +104,18 @@ async function getOrCreateOriginTab(origin) {
       try {
         const tab = await chrome.tabs.get(existing.tabId);
         if (tab && !tab.url?.startsWith('chrome://')) {
+          // Tab exists — try to read fresh auth from it
+          await readCapturedAuth(existing.tabId, origin);
           return existing.tabId;
         }
       } catch {
-        // Tab was closed externally
         originPool.delete(origin);
       }
     }
+
+    // Register auth interceptor BEFORE creating tab
+    // (runs at document_start, captures auth from SPA's initial requests)
+    await ensureAuthInterceptor(origin);
 
     // Create new background tab
     console.log(`[CGW] Opening origin tab: ${origin}`);
@@ -99,9 +154,8 @@ async function getOrCreateOriginTab(origin) {
       throw new Error(`Origin tab timeout: ${origin}`);
     }
 
-    // Wait for auth header to be captured by webRequest
-    // SPA may need time to load and make API requests with Authorization
-    await waitForAuth(origin, AUTH_WAIT_TIMEOUT);
+    // Wait for auth header (captured by interceptor or webRequest)
+    await waitForAuth(origin, AUTH_WAIT_TIMEOUT, tabId);
 
     originPool.set(origin, { tabId });
     console.log(`[CGW] Origin tab ready: ${origin} (tab ${tabId}, auth: ${authCache.has(origin) ? 'yes' : 'cookies only'})`);
@@ -109,14 +163,23 @@ async function getOrCreateOriginTab(origin) {
   });
 }
 
-// Wait for auth header to appear in cache
-async function waitForAuth(origin, timeout) {
+// Wait for auth header to appear in cache (polls both webRequest and interceptor)
+async function waitForAuth(origin, timeout, tabId) {
   console.log(`[CGW] Waiting for auth header for ${origin}...`);
   const deadline = Date.now() + timeout;
   while (Date.now() < deadline) {
+    // Check webRequest capture
     if (authCache.has(origin)) {
-      console.log(`[CGW] Auth header captured for ${origin}`);
+      console.log(`[CGW] Auth header captured for ${origin} (webRequest)`);
       return true;
+    }
+    // Check interceptor capture (read from tab's window.__cgw_auth)
+    if (tabId) {
+      const auth = await readCapturedAuth(tabId, origin);
+      if (auth) {
+        console.log(`[CGW] Auth header captured for ${origin} (interceptor)`);
+        return true;
+      }
     }
     await sleep(500);
   }
@@ -137,11 +200,19 @@ async function refreshOriginAuth(origin) {
   // Clear old auth header
   authCache.delete(origin);
 
+  // Clear interceptor state in the tab
+  try {
+    await chrome.scripting.executeScript({
+      target: { tabId: entry.tabId },
+      world: 'MAIN',
+      func: () => { window.__cgw_auth = null; }
+    });
+  } catch {}
+
   // Reload the tab (like CDP Page.reload)
   try {
     await chrome.tabs.reload(entry.tabId);
   } catch {
-    // Tab may have been closed — restore old auth
     if (oldAuth) authCache.set(origin, oldAuth);
     originPool.delete(origin);
     return false;
@@ -162,7 +233,7 @@ async function refreshOriginAuth(origin) {
   }
 
   // Wait for new auth header (up to 15s, matches CDP RefreshSessionAuth)
-  const refreshed = await waitForAuth(origin, AUTH_REFRESH_TIMEOUT);
+  const refreshed = await waitForAuth(origin, AUTH_REFRESH_TIMEOUT, entry.tabId);
 
   // If refresh failed, restore old auth (mirrors CDP behavior)
   if (!refreshed && oldAuth) {
@@ -183,11 +254,9 @@ async function evictOriginTab(origin) {
 }
 
 // ── Execute fetch in origin tab context ────────────────────
-// Mirrors CDP Runtime.evaluate — runs fetch() in page context (MAIN world only)
+// Mirrors CDP Runtime.evaluate — runs fetch() in MAIN world only
 
 async function executeFetchInTab(tabId, url, options) {
-  // MAIN world = page context (same as CDP Runtime.evaluate)
-  // This gives access to page cookies, localStorage, etc.
   try {
     const results = await chrome.scripting.executeScript({
       target: { tabId },
@@ -217,7 +286,6 @@ async function executeFetchInTab(tabId, url, options) {
   }
 
   // Fallback: fetch from Service Worker with cookies from chrome.cookies API
-  // (only if MAIN world is blocked, e.g. by CSP)
   console.log('[CGW] Fallback: fetch from SW with manual cookies');
   return await fetchWithCookies(url, options);
 }
@@ -267,8 +335,8 @@ function buildFetchOpts(skill, url, origin, headers, body) {
   }
 
   // Credentials mode — matches CDP BuildFetchJs exactly:
-  //   cross-origin → 'same-origin' (no cookies, avoid CORS conflict with Allow-Origin: *)
-  //   same-origin + has auth → 'same-origin' (no cookies, rely on Authorization header)
+  //   cross-origin → 'same-origin' (no cookies, avoid CORS conflict)
+  //   same-origin + has auth → 'same-origin' (no cookies, rely on Authorization)
   //   same-origin + no auth → 'include' (send cookies)
   const isCrossOrigin = skill.fetchOrigin && new URL(url).origin !== origin;
   const hasAuth = !!auth;
@@ -343,6 +411,9 @@ export async function invokeSkill(skillName, params = {}) {
   // Get or create origin tab
   let tabId = await getOrCreateOriginTab(origin);
 
+  // Read fresh auth right before building opts (from interceptor in tab)
+  await readCapturedAuth(tabId, origin);
+
   // Build fetch options with fresh auth (mirrors CDP BuildFetchJs)
   let fetchOpts = buildFetchOpts(skill, url, origin, skillHeaders, body);
 
@@ -355,12 +426,12 @@ export async function invokeSkill(skillName, params = {}) {
     const refreshed = await refreshOriginAuth(origin);
     console.log(`[CGW] Auth refresh ${refreshed ? 'succeeded' : 'failed, using previous auth'}`);
 
-    // Re-get tab (might have been replaced if refresh failed)
     tabId = await getOrCreateOriginTab(origin);
 
-    // Rebuild fetch options with fresh (or restored) auth header
-    fetchOpts = buildFetchOpts(skill, url, origin, skillHeaders, body);
+    // Read fresh auth from reloaded tab
+    await readCapturedAuth(tabId, origin);
 
+    fetchOpts = buildFetchOpts(skill, url, origin, skillHeaders, body);
     result = await executeFetchInTab(tabId, url, fetchOpts);
   }
 
@@ -370,9 +441,8 @@ export async function invokeSkill(skillName, params = {}) {
     await evictOriginTab(origin);
     tabId = await getOrCreateOriginTab(origin);
 
-    // Rebuild fetch options with fresh auth header
+    await readCapturedAuth(tabId, origin);
     fetchOpts = buildFetchOpts(skill, url, origin, skillHeaders, body);
-
     result = await executeFetchInTab(tabId, url, fetchOpts);
   }
 
