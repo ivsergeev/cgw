@@ -180,7 +180,7 @@ node index.js restart   # перезапустить
 | Поле | Что вводить |
 |------|------------|
 | **Имя экземпляра** | Любое понятное имя, например `Chrome Work` |
-| **URL Bridge** | `http://localhost:9877` |
+| **URL сервера MCP** | `http://localhost:9877` |
 | **Токен расширения** | Значение `extensionToken` из `~/.corpgateway/cgw_mcp.json` |
 
 Нажмите **Сохранить**.
@@ -277,7 +277,7 @@ node index.js restart   # перезапустить
 opencode
 ```
 
-При старте OpenCode автоматически подключится к cgw_mcp и получит список доступных инструментов: `cgw_groups`, `cgw_list`, `cgw_schema`, `cgw_invoke`, `cgw_health`.
+При старте OpenCode автоматически подключится к cgw_mcp и получит список доступных инструментов: `cgw_groups`, `cgw_list`, `cgw_schema`, `cgw_invoke`, `cgw_health`, `cgw_audit`.
 
 ---
 
@@ -327,7 +327,7 @@ curl -H "Authorization: Bearer <TOKEN>" http://localhost:9877/health
 |---------|---------|
 | Иконка остаётся серой | Проверьте, что cgw_mcp запущен: `node index.js status` |
 | «Нет токена расширения» | Откройте настройки расширения и введите `extensionToken` |
-| Ошибка WebSocket | Проверьте URL Bridge: должен быть `http://localhost:9877` |
+| Ошибка WebSocket | Проверьте URL сервера MCP: должен быть `http://localhost:9877` |
 
 ### Агент не видит инструменты
 

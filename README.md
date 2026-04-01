@@ -84,7 +84,7 @@ node index.js
 1. Иконка расширения → **⚙ Настройки**
 2. В разделе **Подключение к MCP**:
    - **Имя экземпляра:** любое (напр. «Chrome Рабочий»)
-   - **URL Bridge:** `http://localhost:9877`
+   - **URL сервера MCP:** `http://localhost:9877`
    - **Токен расширения:** скопируйте `extensionToken` из `~/.corpgateway/cgw_mcp.json`
 3. Нажмите **Сохранить**
 4. В popup расширения нажмите **⚡ Подключить**
@@ -216,18 +216,32 @@ mm_channel_posts(channel_id:str)  // Сообщения канала
 ┌─────────────────────────────────────────────────────────┐
 │  Уровень 1: HTTP API (cgw_mcp)                         │
 │  • Bearer token на каждый запрос от агента              │
+│  • Timing-safe сравнение токенов                        │
+│  • Rate limiting: 10 попыток/мин по IP                  │
 │  • localhost only — не доступен из сети                 │
-│  • Extension token для WebSocket аутентификации         │
+│  • CORS ограничен localhost                             │
+│  • Whitelist JSON-RPC методов                           │
+│  • Лимит размера сообщений (1 МБ)                      │
 │                                                         │
-│  Уровень 2: Chrome Extension                            │
-│  • host_permissions ограничивают доступные домены       │
-│  • Пользователь явно видит к каким сайтам доступ        │
+│  Уровень 2: WebSocket (cgw_mcp ↔ расширение)           │
+│  • Extension token для аутентификации                   │
+│  • Mutual auth: HMAC challenge-response                 │
+│  • Обе стороны доказывают знание extensionToken         │
+│                                                         │
+│  Уровень 3: Chrome Extension                            │
+│  • Sender validation — web-страницы не могут слать      │
+│    команды расширению                                   │
+│  • SSRF-защита: блокировка приватных IP, только http(s) │
+│  • Валидация шаблонов: защита от injection в JSON/HTTP  │
 │  • Подключение к MCP — только по кнопке пользователя   │
+│  • Уведомления при истечении сессии авторизации         │
 │                                                         │
-│  Уровень 3: Данные                                      │
+│  Уровень 4: Данные                                      │
 │  • Credentials не хранятся — используется сессия Chrome │
 │  • Токены в cgw_mcp.json с правами 0600                │
 │  • Скилы в chrome.storage.local (зашифровано Chrome)    │
+│  • Audit log: последние 100 вызовов в session storage   │
+│  • Токены маскируются в логах                           │
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -258,7 +272,7 @@ mm_channel_posts(channel_id:str)  // Сообщения канала
 | Поле | Описание |
 |------|----------|
 | Имя экземпляра | Идентификация при нескольких браузерах |
-| URL Bridge | HTTP-адрес cgw_mcp |
+| URL сервера MCP | HTTP-адрес cgw_mcp |
 | Токен расширения | `extensionToken` из cgw_mcp.json |
 
 ## Управление cgw_mcp
@@ -335,7 +349,10 @@ SSE keep-alive (MCP spec). Требует `Authorization: Bearer <token>`.
 
 ### WS /extension/ws
 
-WebSocket для расширения. Аутентификация через query parameter: `?token=<extensionToken>&name=<instanceName>`.
+WebSocket для расширения. Двухэтапная аутентификация:
+
+1. Подключение с `?token=<extensionToken>&name=<instanceName>`
+2. Mutual auth (HMAC challenge-response) — обе стороны доказывают знание `extensionToken`
 
 ## Несколько браузеров
 
@@ -358,7 +375,7 @@ WebSocket для расширения. Аутентификация через q
 │   ├── lib/
 │   │   ├── storage.js          # CRUD skills/groups в chrome.storage
 │   │   ├── executor.js         # Выполнение скилов (fetch + подстановка)
-│   │   └── mcp.js              # MCP JSON-RPC handler (5 meta-tools)
+│   │   └── mcp.js              # MCP JSON-RPC handler (6 meta-tools)
 │   └── icons/                  # Цветные + серые иконки
 │
 ├── cgw_mcp/                    # MCP Server (Node.js)
