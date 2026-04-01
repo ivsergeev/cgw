@@ -192,6 +192,40 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   }
 });
 
+// ── Browser theme (agent mode highlight) ────────────────────
+
+const AGENT_THEME = {
+  colors: {
+    frame: [79, 70, 229],              // #4f46e5 — indigo window frame
+    frame_inactive: [99, 102, 241],     // #6366f1 — lighter when inactive
+    toolbar: [67, 56, 202],             // #4338ca — toolbar
+    tab_background_text: [255, 255, 255],
+    toolbar_text: [255, 255, 255],
+    bookmark_text: [255, 255, 255],
+    tab_text: [230, 230, 255],
+    omnibox_text: [255, 255, 255],
+    omnibox_background: [55, 48, 163],  // #3730a3
+    ntp_background: [49, 46, 129],      // #312e81
+    ntp_text: [255, 255, 255],
+  }
+};
+
+function applyAgentTheme() {
+  try {
+    chrome.theme.update(AGENT_THEME);
+  } catch (err) {
+    console.log('[CGW] Theme update error:', err.message);
+  }
+}
+
+function resetTheme() {
+  try {
+    chrome.theme.reset();
+  } catch (err) {
+    console.log('[CGW] Theme reset error:', err.message);
+  }
+}
+
 // ── Icon status indicator ───────────────────────────────────
 
 const ICON_ACTIVE = { 16: 'icons/icon16.png', 48: 'icons/icon48.png', 128: 'icons/icon128.png' };
@@ -209,6 +243,13 @@ function updateIcon() {
 
   chrome.action.setIcon({ path: connected ? ICON_ACTIVE : ICON_GRAY });
   chrome.action.setTitle({ title: connected ? 'CorpGateway — MCP подключён' : 'CorpGateway — не подключён' });
+
+  // Apply or reset browser theme
+  if (connected) {
+    applyAgentTheme();
+  } else {
+    resetTheme();
+  }
 
   // Broadcast overlay state to all tabs
   chrome.tabs.query({}, (tabs) => {
