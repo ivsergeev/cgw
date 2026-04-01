@@ -1,10 +1,11 @@
 // CorpGateway Extension — Skill executor with origin tab pool
 //
-// Analogous to ChromeCdpService in tray app:
+// Mirrors ChromeCdpService flow from tray app:
 // - Maintains a pool of background tabs (one per origin)
 // - Executes fetch() in the context of the origin tab (has cookies/session)
 // - Captures Authorization headers via webRequest
-// - Handles SSO redirects, token refresh on 401
+// - On 401: reloads page, waits for new auth header, retries
+// - On network error: evicts tab, creates fresh session, retries
 
 import { getEnabledSkills } from './storage.js';
 
@@ -22,8 +23,10 @@ export function getAuthHeader(origin) {
 
 // ── Origin tab pool ────────────────────────────────────────
 
-const originPool = new Map(); // origin → { tabId, ready }
-const POOL_TIMEOUT = 30000;   // 30s to wait for tab to load on origin
+const originPool = new Map(); // origin → { tabId }
+const POOL_TIMEOUT = 25000;   // 25s to wait for tab to land on origin (matches CDP)
+const AUTH_WAIT_TIMEOUT = 10000; // 10s to wait for auth header after tab ready
+const AUTH_REFRESH_TIMEOUT = 15000; // 15s to wait for auth after reload (matches CDP)
 
 async function getOrCreateOriginTab(origin) {
   // Check existing tab
@@ -51,6 +54,7 @@ async function getOrCreateOriginTab(origin) {
   // Wait for tab to land on our origin (SSO may redirect)
   const tabId = tab.id;
   const deadline = Date.now() + POOL_TIMEOUT;
+  let onOrigin = false;
 
   while (Date.now() < deadline) {
     await sleep(800);
@@ -59,26 +63,84 @@ async function getOrCreateOriginTab(origin) {
       if (!current || !current.url) continue;
       if (current.url === 'about:blank') continue;
 
+      console.log(`[CGW] Tab ${tabId} url: ${current.url} status: ${current.status}`);
+
       const tabOrigin = new URL(current.url).origin;
-      if (tabOrigin.toLowerCase() === origin.toLowerCase()) {
-        // Wait for page to finish loading
-        if (current.status === 'complete') {
-          originPool.set(origin, { tabId });
-          console.log(`[CGW] Origin tab ready: ${origin} (tab ${tabId})`);
-          return tabId;
-        }
+      if (tabOrigin.toLowerCase() === origin.toLowerCase() && current.status === 'complete') {
+        onOrigin = true;
+        break;
       }
     } catch {
-      break; // Tab gone
+      break;
     }
   }
 
-  // Timeout — cleanup
-  try { await chrome.tabs.remove(tabId); } catch {}
-  throw new Error(`Origin tab timeout: ${origin} (SSO redirect not completed in ${POOL_TIMEOUT / 1000}s)`);
+  if (!onOrigin) {
+    try { await chrome.tabs.remove(tabId); } catch {}
+    throw new Error(`Origin tab timeout: ${origin}`);
+  }
+
+  // Wait for auth header to be captured by webRequest
+  // SPA may need time to load and make API requests with Authorization
+  await waitForAuth(origin, AUTH_WAIT_TIMEOUT);
+
+  originPool.set(origin, { tabId });
+  console.log(`[CGW] Origin tab ready: ${origin} (tab ${tabId}, auth: ${authCache.has(origin) ? 'yes' : 'cookies only'})`);
+  return tabId;
 }
 
-// Evict a tab from pool (on error, for retry)
+// Wait for auth header to appear in cache
+async function waitForAuth(origin, timeout) {
+  console.log(`[CGW] Waiting for auth header for ${origin}...`);
+  const deadline = Date.now() + timeout;
+  while (Date.now() < deadline) {
+    if (authCache.has(origin)) {
+      console.log(`[CGW] Auth header captured for ${origin}`);
+      return true;
+    }
+    await sleep(500);
+  }
+  console.log(`[CGW] No auth header for ${origin} (cookies only)`);
+  return false;
+}
+
+// Refresh auth by reloading the origin tab (mirrors CDP Page.reload)
+async function refreshOriginAuth(origin) {
+  const entry = originPool.get(origin);
+  if (!entry) return false;
+
+  console.log(`[CGW] Refreshing auth for ${origin} (reload tab ${entry.tabId})...`);
+
+  // Clear old auth header
+  authCache.delete(origin);
+
+  // Reload the tab (like CDP Page.reload)
+  try {
+    await chrome.tabs.reload(entry.tabId);
+  } catch {
+    // Tab may have been closed
+    originPool.delete(origin);
+    return false;
+  }
+
+  // Wait for tab to finish loading
+  const loadDeadline = Date.now() + POOL_TIMEOUT;
+  while (Date.now() < loadDeadline) {
+    await sleep(800);
+    try {
+      const current = await chrome.tabs.get(entry.tabId);
+      if (current?.status === 'complete') break;
+    } catch {
+      originPool.delete(origin);
+      return false;
+    }
+  }
+
+  // Wait for new auth header (up to 15s, matches CDP RefreshSessionAuth)
+  return await waitForAuth(origin, AUTH_REFRESH_TIMEOUT);
+}
+
+// Evict a tab from pool (on network error, for fresh session)
 async function evictOriginTab(origin) {
   const entry = originPool.get(origin);
   if (entry) {
@@ -90,32 +152,102 @@ async function evictOriginTab(origin) {
 // ── Execute fetch in origin tab context ────────────────────
 
 async function executeFetchInTab(tabId, url, options) {
-  // Inject and execute fetch() in the tab's page context
-  // This ensures cookies and session are attached automatically
-  const results = await chrome.scripting.executeScript({
-    target: { tabId },
-    world: 'MAIN', // page context (has cookies, session)
-    func: async (fetchUrl, fetchOpts) => {
-      try {
-        const resp = await fetch(fetchUrl, fetchOpts);
-        const text = await resp.text();
-        return {
-          status: resp.status,
-          body: text,
-          contentType: resp.headers.get('content-type') || ''
-        };
-      } catch (e) {
-        return { status: 0, body: e.message, contentType: 'error' };
-      }
-    },
-    args: [url, options]
-  });
+  // Try MAIN world first (page context — cookies automatically)
+  // Fallback to ISOLATED world with manual cookie injection
+  for (const world of ['MAIN', 'ISOLATED']) {
+    try {
+      const results = await chrome.scripting.executeScript({
+        target: { tabId },
+        world,
+        func: async (fetchUrl, fetchOpts) => {
+          try {
+            const resp = await fetch(fetchUrl, fetchOpts);
+            const text = await resp.text();
+            return {
+              status: resp.status,
+              body: text,
+              contentType: resp.headers.get('content-type') || ''
+            };
+          } catch (e) {
+            return { status: 0, body: e.message, contentType: 'error' };
+          }
+        },
+        args: [url, options]
+      });
 
-  if (!results || !results[0] || results[0].error) {
-    throw new Error(results?.[0]?.error?.message || 'Script execution failed');
+      if (results?.[0]?.result) {
+        console.log(`[CGW] Fetch executed in ${world} world, status: ${results[0].result.status}`);
+        return results[0].result;
+      }
+    } catch (err) {
+      console.log(`[CGW] executeScript ${world} failed: ${err.message}`);
+      // Try next world
+    }
   }
 
-  return results[0].result;
+  // Last resort: fetch from Service Worker with cookies from chrome.cookies API
+  console.log('[CGW] Fallback: fetch from SW with manual cookies');
+  return await fetchWithCookies(url, options);
+}
+
+async function fetchWithCookies(url, options) {
+  try {
+    const urlObj = new URL(url);
+    const cookies = await chrome.cookies.getAll({ domain: urlObj.hostname });
+    const cookieHeader = cookies.map(c => c.name + '=' + c.value).join('; ');
+
+    const headers = { ...(options.headers || {}) };
+    if (cookieHeader) headers['Cookie'] = cookieHeader;
+
+    const resp = await fetch(url, { ...options, headers, credentials: 'omit' });
+    const text = await resp.text();
+    return {
+      status: resp.status,
+      body: text,
+      contentType: resp.headers.get('content-type') || ''
+    };
+  } catch (e) {
+    return { status: 0, body: e.message, contentType: 'error' };
+  }
+}
+
+// ── Build fetch options with fresh auth ──────────────────
+
+function buildFetchOpts(skill, url, origin, headers, body) {
+  // Clone headers and inject fresh auth (mirrors CDP BuildFetchJs:
+  // 1. Set captured auth first
+  // 2. Skill headers overlay on top)
+  const fetchHeaders = {};
+
+  // First: captured auth header
+  const auth = getAuthHeader(origin);
+  if (auth) {
+    fetchHeaders['Authorization'] = auth;
+  }
+
+  // Second: skill-configured headers override captured auth
+  for (const [k, v] of Object.entries(headers)) {
+    fetchHeaders[k] = v;
+  }
+
+  // Add Content-Type for body requests
+  if (body && !Object.keys(fetchHeaders).some(k => k.toLowerCase() === 'content-type')) {
+    fetchHeaders['Content-Type'] = 'application/json';
+  }
+
+  // Credentials mode:
+  // same-origin tab → 'include' (send cookies)
+  // cross-origin (fetchOrigin set) → 'same-origin' (avoid CORS conflict with Allow-Origin: *)
+  const isCrossOrigin = skill.fetchOrigin && new URL(url).origin !== origin;
+  const credentials = isCrossOrigin ? 'same-origin' : 'include';
+
+  const opts = {
+    method: skill.httpMethod,
+    headers: fetchHeaders,
+    credentials
+  };
+  if (body) opts.body = body;
+  return opts;
 }
 
 // ── Invoke a skill ─────────────────────────────────────────
@@ -166,59 +298,49 @@ export async function invokeSkill(skillName, params = {}) {
     url += (url.includes('?') ? '&' : '?') + qs;
   }
 
-  // Build headers with template substitution
-  const headers = {};
+  // Build skill-configured headers (with template substitution)
+  const skillHeaders = {};
   for (const [k, v] of Object.entries(skill.headers || {})) {
-    headers[k] = v.includes('{{') ? substituteTemplate(v, remaining, paramDefs, true) : v;
-  }
-
-  // Add Content-Type for body requests
-  if (body && !Object.keys(headers).some(k => k.toLowerCase() === 'content-type')) {
-    headers['Content-Type'] = 'application/json';
+    skillHeaders[k] = v.includes('{{') ? substituteTemplate(v, remaining, paramDefs, true) : v;
   }
 
   // Determine origin for tab pool
   const origin = skill.fetchOrigin || new URL(url).origin;
 
-  // Add captured auth header if available
-  const auth = getAuthHeader(origin);
-  if (auth && !headers['Authorization']) {
-    headers['Authorization'] = auth;
-  }
-
   // Get or create origin tab
-  const tabId = await getOrCreateOriginTab(origin);
+  let tabId = await getOrCreateOriginTab(origin);
 
-  // Build fetch options
-  const fetchOpts = {
-    method: skill.httpMethod,
-    headers,
-    credentials: 'include' // same-origin in tab context — cookies sent
-  };
-  if (body) fetchOpts.body = body;
+  // Build fetch options with fresh auth (mirrors CDP BuildFetchJs)
+  let fetchOpts = buildFetchOpts(skill, url, origin, skillHeaders, body);
 
   // Execute fetch in tab context
   let result = await executeFetchInTab(tabId, url, fetchOpts);
 
-  // On 401 — evict tab and retry once (session may have expired)
+  // On 401 — reload page, wait for fresh auth, retry (mirrors CDP RefreshSessionAuth)
   if (result.status === 401) {
-    console.log(`[CGW] 401 for ${skillName}, refreshing origin tab...`);
-    await evictOriginTab(origin);
-    const newTabId = await getOrCreateOriginTab(origin);
+    console.log(`[CGW] 401 for ${skillName}, refreshing auth via page reload...`);
+    const refreshed = await refreshOriginAuth(origin);
+    console.log(`[CGW] Auth refresh ${refreshed ? 'succeeded' : 'failed (cookies only)'}`);
 
-    // Wait a moment for SPA to authenticate
-    await sleep(2000);
+    // Re-get tab (might have been replaced if refresh failed)
+    tabId = await getOrCreateOriginTab(origin);
 
-    result = await executeFetchInTab(newTabId, url, fetchOpts);
+    // Rebuild fetch options with fresh auth header
+    fetchOpts = buildFetchOpts(skill, url, origin, skillHeaders, body);
+
+    result = await executeFetchInTab(tabId, url, fetchOpts);
   }
 
-  // On fetch error — evict and retry once
+  // On fetch error — evict, create fresh session, retry (mirrors CDP error handling)
   if (result.contentType === 'error' && result.status === 0) {
-    console.log(`[CGW] Fetch error for ${skillName}: ${result.body}, retrying...`);
+    console.log(`[CGW] Fetch error for ${skillName}: ${result.body}, evicting and retrying...`);
     await evictOriginTab(origin);
-    const newTabId = await getOrCreateOriginTab(origin);
-    await sleep(1000);
-    result = await executeFetchInTab(newTabId, url, fetchOpts);
+    tabId = await getOrCreateOriginTab(origin);
+
+    // Rebuild fetch options with fresh auth header
+    fetchOpts = buildFetchOpts(skill, url, origin, skillHeaders, body);
+
+    result = await executeFetchInTab(tabId, url, fetchOpts);
   }
 
   // Apply response filter

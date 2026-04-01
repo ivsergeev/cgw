@@ -4,8 +4,8 @@ set -euo pipefail
 # cgw_mcp daemon installer (Linux / macOS)
 #
 # Installs cgw_mcp as a user-level service:
-# - Linux:  systemd user service
-# - macOS:  launchd LaunchAgent
+# - Linux:  systemd user service (runs --foreground under systemd)
+# - macOS:  launchd LaunchAgent (runs --foreground under launchd)
 #
 # Usage:
 #   ./install.sh           # install and start
@@ -50,7 +50,8 @@ After=network.target
 
 [Service]
 Type=simple
-ExecStart=$NODE_BIN $ENTRY
+ExecStart=$NODE_BIN $ENTRY --foreground
+ExecStop=$NODE_BIN $ENTRY stop
 Restart=on-failure
 RestartSec=5
 WorkingDirectory=$SCRIPT_DIR
@@ -72,6 +73,12 @@ EOF
     echo "  systemctl --user restart $SERVICE_NAME"
     echo "  systemctl --user stop $SERVICE_NAME"
     echo "  journalctl --user -u $SERVICE_NAME -f"
+    echo ""
+    echo "Or use built-in daemon mode directly:"
+    echo "  node $ENTRY status"
+    echo "  node $ENTRY start     # background daemon"
+    echo "  node $ENTRY stop"
+    echo "  node $ENTRY restart"
 }
 
 uninstall_linux() {
@@ -100,6 +107,7 @@ install_macos() {
     <array>
         <string>$NODE_BIN</string>
         <string>$ENTRY</string>
+        <string>--foreground</string>
     </array>
     <key>WorkingDirectory</key>
     <string>$SCRIPT_DIR</string>
@@ -132,6 +140,12 @@ EOF
     echo "  launchctl unload $plist_file   # stop"
     echo "  launchctl load $plist_file     # start"
     echo "  tail -f ~/.corpgateway/logs/cgw_mcp_launchd.log"
+    echo ""
+    echo "Or use built-in daemon mode directly:"
+    echo "  node $ENTRY status"
+    echo "  node $ENTRY start     # background daemon"
+    echo "  node $ENTRY stop"
+    echo "  node $ENTRY restart"
 }
 
 uninstall_macos() {

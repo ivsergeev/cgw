@@ -31,13 +31,26 @@ if (-not (Test-Path $ModulesDir)) {
 }
 
 if ($Uninstall) {
-    Get-Process -Name 'node' -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+    # Stop daemon
+    & $NodeBin $Entry stop
+
+    # Remove scheduled task (if exists from old install)
     Unregister-ScheduledTask -TaskName $TaskName -Confirm:$false -ErrorAction SilentlyContinue
+
     Write-Host 'Service removed' -ForegroundColor Green
     exit 0
 }
 
-$Action = New-ScheduledTaskAction -Execute $NodeBin -Argument $Entry -WorkingDirectory $ScriptDir
+# Stop old instance if running
+& $NodeBin $Entry stop 2>$null
+
+# Remove old scheduled task (if exists from previous install method)
+Unregister-ScheduledTask -TaskName $TaskName -Confirm:$false -ErrorAction SilentlyContinue
+
+# Create scheduled task that starts the daemon at logon
+# The daemon itself detaches and runs in background (windowsHide),
+# so the task just kicks it off — no console window
+$Action = New-ScheduledTaskAction -Execute $NodeBin -Argument "`"$Entry`" start" -WorkingDirectory $ScriptDir
 
 $Trigger = New-ScheduledTaskTrigger -AtLogOn -User $env:USERNAME
 
@@ -45,42 +58,25 @@ $Settings = New-ScheduledTaskSettingsSet `
     -AllowStartIfOnBatteries `
     -DontStopIfGoingOnBatteries `
     -StartWhenAvailable `
-    -RestartCount 3 `
-    -RestartInterval (New-TimeSpan -Minutes 1) `
-    -ExecutionTimeLimit (New-TimeSpan -Days 365)
-
-Unregister-ScheduledTask -TaskName $TaskName -Confirm:$false -ErrorAction SilentlyContinue
+    -ExecutionTimeLimit (New-TimeSpan -Minutes 1)
 
 Register-ScheduledTask `
     -TaskName $TaskName `
     -Action $Action `
     -Trigger $Trigger `
     -Settings $Settings `
-    -Description 'CorpGateway MCP Server' `
+    -Description 'CorpGateway MCP Server — start daemon at logon' `
     -RunLevel Limited
 
-Write-Host 'Installed scheduled task' -ForegroundColor Green
+Write-Host 'Installed scheduled task (starts daemon at logon)' -ForegroundColor Green
 
-Start-ScheduledTask -TaskName $TaskName
-Start-Sleep -Seconds 2
+# Start daemon now
+& $NodeBin $Entry start
 
-Write-Host 'Service started' -ForegroundColor Green
 Write-Host ''
 Write-Host 'Commands:' -ForegroundColor Cyan
-Write-Host '  Get-ScheduledTask -TaskName cgw-mcp'
-Write-Host '  Start-ScheduledTask -TaskName cgw-mcp'
-Write-Host '  Stop-ScheduledTask -TaskName cgw-mcp'
-Write-Host '  .\install.ps1 -Uninstall'
-
-Start-Sleep -Seconds 1
-if (Test-Path $ConfigPath) {
-    $cfg = Get-Content $ConfigPath -Raw | ConvertFrom-Json
-    $LogPath = Join-Path $ConfigDir 'logs'
-    Write-Host ''
-    Write-Host ('Config: ' + $ConfigPath) -ForegroundColor White
-    Write-Host ('Logs:   ' + $LogPath) -ForegroundColor White
-    Write-Host ''
-    Write-Host ('Port:            ' + $cfg.port) -ForegroundColor White
-    Write-Host ('Agent token:     ' + $cfg.token) -ForegroundColor Yellow
-    Write-Host ('Extension token: ' + $cfg.extensionToken) -ForegroundColor Yellow
-}
+Write-Host ('  node ' + $Entry + ' status    — check status')
+Write-Host ('  node ' + $Entry + ' stop      — stop daemon')
+Write-Host ('  node ' + $Entry + ' start     — start daemon')
+Write-Host ('  node ' + $Entry + ' restart   — restart daemon')
+Write-Host '  .\install.ps1 -Uninstall        — remove autostart'
