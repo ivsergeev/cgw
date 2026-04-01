@@ -428,6 +428,10 @@ export async function invokeSkill(skillName, params = {}) {
     }
   }
 
+  // SSRF protection: validate final URL
+  validateUrl(url);
+  if (skill.fetchOrigin) validateUrl(skill.fetchOrigin);
+
   const paramDefs = {};
   for (const p of skill.parameters || []) {
     paramDefs[p.name.toLowerCase()] = p;
@@ -552,20 +556,43 @@ function substituteTemplate(template, params, paramDefs, isHeader = false) {
     let substitution;
 
     switch (type) {
-      case 'Integer':
-        substitution = String(parseInt(value, 10) || 0);
+      case 'Integer': {
+        const n = parseInt(value, 10);
+        if (!Number.isFinite(n)) throw new Error(`Invalid integer for ${key}: ${value}`);
+        substitution = String(n);
         break;
-      case 'Float':
-        substitution = String(parseFloat(value) || 0);
+      }
+      case 'Float': {
+        const f = parseFloat(value);
+        if (!Number.isFinite(f)) throw new Error(`Invalid float for ${key}: ${value}`);
+        substitution = String(f);
         break;
+      }
       case 'Boolean':
         substitution = ['true', '1', 'yes'].includes(value.trim().toLowerCase()) ? 'true' : 'false';
         break;
       default:
-        substitution = isHeader ? value : JSON.stringify(value).slice(1, -1);
+        if (isHeader) {
+          // Block CRLF injection in headers
+          if (/[\r\n]/.test(value)) throw new Error(`Invalid header value for ${key}: contains newline`);
+          substitution = value;
+        } else {
+          // JSON body: use full JSON.stringify to properly escape all special chars
+          // The placeholder in template should be inside quotes: "field": "{{param}}"
+          // JSON.stringify escapes \, ", control chars, unicode correctly
+          substitution = JSON.stringify(value).slice(1, -1);
+        }
     }
     result = result.replaceAll(placeholder, substitution);
   }
+
+  // For body templates: verify the result is still valid JSON
+  if (!isHeader && result.trim()) {
+    try { JSON.parse(result); } catch {
+      throw new Error('Template substitution produced invalid JSON — check parameter values');
+    }
+  }
+
   return result;
 }
 
@@ -608,6 +635,47 @@ function setNested(target, parts, value) {
 
 function escapeRegex(str) {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+// ── SSRF protection ──────────────────────────────────────────
+
+const PRIVATE_IP_PATTERNS = [
+  /^127\./,                           // loopback
+  /^10\./,                            // 10.0.0.0/8
+  /^172\.(1[6-9]|2\d|3[01])\./,      // 172.16.0.0/12
+  /^192\.168\./,                      // 192.168.0.0/16
+  /^169\.254\./,                      // link-local
+  /^0\./,                             // 0.0.0.0/8
+  /^::1$/,                            // IPv6 loopback
+  /^fc/i, /^fd/i,                     // IPv6 ULA
+  /^fe80/i,                           // IPv6 link-local
+];
+
+function validateUrl(urlString) {
+  let parsed;
+  try {
+    parsed = new URL(urlString);
+  } catch {
+    throw new Error(`Invalid URL: ${urlString}`);
+  }
+
+  if (!['http:', 'https:'].includes(parsed.protocol)) {
+    throw new Error(`Blocked protocol: ${parsed.protocol} — only http/https allowed`);
+  }
+
+  const hostname = parsed.hostname.toLowerCase();
+
+  // Block localhost / loopback
+  if (hostname === 'localhost' || hostname === '::1') {
+    throw new Error(`Blocked URL: access to ${hostname} is not allowed`);
+  }
+
+  // Block private/reserved IP ranges
+  for (const pattern of PRIVATE_IP_PATTERNS) {
+    if (pattern.test(hostname)) {
+      throw new Error(`Blocked URL: access to private IP ${hostname} is not allowed`);
+    }
+  }
 }
 
 function sleep(ms) {

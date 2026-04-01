@@ -316,9 +316,14 @@ function startServer() {
   const server = http.createServer((req, res) => {
     req.setTimeout(60_000);
     res.setTimeout(60_000);
-    res.setHeader('Access-Control-Allow-Origin', '*');
+    // CORS: only allow localhost origins (agents run locally)
+    const origin = req.headers.origin || '';
+    if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) {
+      res.setHeader('Access-Control-Allow-Origin', origin);
+    }
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type');
+    res.setHeader('Vary', 'Origin');
 
     if (req.method === 'OPTIONS') { res.writeHead(200); res.end(); return; }
 
@@ -333,7 +338,8 @@ function startServer() {
 
   // ── WebSocket Server (extension) ─────────────────────────
 
-  const wss = new WebSocketServer({ noServer: true });
+  const WS_MAX_MESSAGE = 1 << 20; // 1 MB — same as HTTP body limit
+  const wss = new WebSocketServer({ noServer: true, maxPayload: WS_MAX_MESSAGE });
 
   server.on('upgrade', (req, socket, head) => {
     const url = new URL(req.url, `http://localhost:${config.port}`);
@@ -430,6 +436,16 @@ function startServer() {
       }
 
       const method = msg.method || '';
+
+      // Method whitelist — only forward known MCP methods
+      const ALLOWED_METHODS = ['initialize', 'ping', 'tools/list', 'tools/call', 'notifications/initialized'];
+      if (!ALLOWED_METHODS.includes(method)) {
+        log('WARN', `Unknown method rejected: ${method}`);
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ jsonrpc: '2.0', id: msg.id, error: { code: -32601, message: 'Method not found' } }));
+        return;
+      }
+
       log('INFO', `→ Agent request id=${msg.id} method=${method}`);
 
       // Handle initialize and ping locally
