@@ -77,6 +77,7 @@ async function loadGroups() {
     div.querySelector('input').addEventListener('change', async (e) => {
       await updateGroup(g.id, { enabled: e.target.checked });
       loadGroups();
+      chrome.runtime.sendMessage({ type: 'skillsChanged' }, () => {});
     });
     container.appendChild(div);
   }

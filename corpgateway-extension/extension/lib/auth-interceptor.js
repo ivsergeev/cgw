@@ -8,6 +8,8 @@
   if (window.__cgw_intercepted) return;
   window.__cgw_intercepted = true;
 
+  console.log('[CGW] Auth interceptor active on', location.origin);
+
   // ── Patch fetch ────────────────────────────────────────────
 
   const origFetch = window.fetch;
@@ -18,7 +20,10 @@
     if (input instanceof Request) {
       try {
         const auth = input.headers.get('Authorization') || input.headers.get('authorization');
-        if (auth) window.__cgw_auth = auth;
+        if (auth) {
+          window.__cgw_auth = auth;
+          console.log('[CGW] Auth captured from Request object');
+        }
       } catch {}
     }
 
@@ -32,6 +37,7 @@
     try {
       if (name && name.toLowerCase() === 'authorization' && value) {
         window.__cgw_auth = value;
+        console.log('[CGW] Auth captured from XHR');
       }
     } catch {}
     return origSetRequestHeader.call(this, name, value);
@@ -59,6 +65,9 @@
       }
     }
 
-    if (auth) window.__cgw_auth = auth;
+    if (auth) {
+      window.__cgw_auth = auth;
+      console.log('[CGW] Auth captured from fetch headers');
+    }
   }
 })();

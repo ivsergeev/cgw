@@ -54,10 +54,14 @@ async function withPoolLock(origin, fn) {
 
 const registeredOrigins = new Set();
 
+function interceptorScriptId(origin) {
+  return 'cgw-auth-' + origin.replace(/[^a-z0-9]/gi, '_');
+}
+
 async function ensureAuthInterceptor(origin) {
   if (registeredOrigins.has(origin)) return;
 
-  const scriptId = 'cgw-auth-' + origin.replace(/[^a-z0-9]/gi, '_');
+  const scriptId = interceptorScriptId(origin);
   const urlPattern = origin + '/*';
 
   try {
@@ -75,6 +79,31 @@ async function ensureAuthInterceptor(origin) {
 
   registeredOrigins.add(origin);
   console.log(`[CGW] Auth interceptor registered for ${origin}`);
+}
+
+// Unregister interceptor for an origin (called on evict / cleanup)
+async function unregisterAuthInterceptor(origin) {
+  if (!registeredOrigins.has(origin)) return;
+
+  const scriptId = interceptorScriptId(origin);
+  try {
+    await chrome.scripting.unregisterContentScripts({ ids: [scriptId] });
+  } catch {}
+
+  registeredOrigins.delete(origin);
+  authCache.delete(origin);
+  console.log(`[CGW] Auth interceptor unregistered for ${origin}`);
+}
+
+// Cleanup all interceptors for origins that no longer have active skills.
+// Call this after skill/group deletion to avoid stale registrations.
+export async function cleanupInterceptors(activeOrigins) {
+  for (const origin of registeredOrigins) {
+    if (!activeOrigins.has(origin)) {
+      await evictOriginTab(origin);
+      await unregisterAuthInterceptor(origin);
+    }
+  }
 }
 
 // Read captured auth from origin tab's window.__cgw_auth
@@ -120,7 +149,7 @@ async function getOrCreateOriginTab(origin) {
     // Create new background tab
     console.log(`[CGW] Opening origin tab: ${origin}`);
     const tab = await chrome.tabs.create({
-      url: origin + '/',
+      url: origin.endsWith('/') ? origin : origin + '/',
       active: false,
       pinned: true
     });
@@ -245,12 +274,14 @@ async function refreshOriginAuth(origin) {
 }
 
 // Evict a tab from pool (on network error, for fresh session)
+// Also unregisters the auth interceptor for this origin
 async function evictOriginTab(origin) {
   const entry = originPool.get(origin);
   if (entry) {
     originPool.delete(origin);
     try { await chrome.tabs.remove(entry.tabId); } catch {}
   }
+  await unregisterAuthInterceptor(origin);
 }
 
 // ── Execute fetch in origin tab context ────────────────────

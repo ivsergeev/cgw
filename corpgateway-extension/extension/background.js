@@ -2,8 +2,8 @@
 // Connects to cgw_mcp via WebSocket — only when user explicitly starts connection
 
 import { handleMcpRequest } from './lib/mcp.js';
-import { setAuthHeader } from './lib/executor.js';
-import { getConfig } from './lib/storage.js';
+import { setAuthHeader, cleanupInterceptors } from './lib/executor.js';
+import { getConfig, getEnabledSkills } from './lib/storage.js';
 
 const DEFAULT_BRIDGE_URL = 'http://localhost:9877';
 let ws = null;
@@ -155,6 +155,13 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     });
     return true;
   }
+
+  if (msg.type === 'skillsChanged') {
+    // Cleanup interceptors for origins that no longer have active skills
+    runInterceptorCleanup();
+    sendResponse({ ok: true });
+    return true;
+  }
 });
 
 // ── Icon status indicator ───────────────────────────────────
@@ -164,6 +171,10 @@ const ICON_GRAY = { 16: 'icons/icon16_gray.png', 48: 'icons/icon48_gray.png', 12
 let lastIconState = null;
 
 function updateIcon() {
+  // Check actual WebSocket state, not just the `connected` flag
+  const isAlive = ws !== null && ws.readyState === WebSocket.OPEN;
+  if (isAlive !== connected) connected = isAlive;
+
   const state = connected ? 'active' : 'gray';
   if (state === lastIconState) return;
   lastIconState = state;
@@ -174,6 +185,26 @@ function updateIcon() {
 
 setInterval(updateIcon, 1000);
 updateIcon();
+
+// ── Interceptor cleanup ──────────────────────────────────────
+// Collects active origins from enabled skills and removes interceptors
+// for origins that are no longer needed (skill/group deleted or disabled)
+
+async function runInterceptorCleanup() {
+  try {
+    const skills = await getEnabledSkills();
+    const activeOrigins = new Set();
+    for (const s of skills) {
+      try {
+        const origin = s.fetchOrigin || new URL(s.url).origin;
+        activeOrigins.add(origin);
+      } catch {}
+    }
+    await cleanupInterceptors(activeOrigins);
+  } catch (err) {
+    console.log('[CGW] Interceptor cleanup error:', err.message);
+  }
+}
 
 // ── Startup — do NOT auto-connect ──────────────────────────
 

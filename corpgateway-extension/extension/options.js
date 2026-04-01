@@ -70,6 +70,7 @@ function renderGroups() {
       await updateGroup(g.id, { enabled: e.target.checked });
       await refreshData();
       renderGroups();
+      notifySkillsChanged();
     });
     item.querySelector('.edit-group').addEventListener('click', (e) => {
       e.stopPropagation();
@@ -84,6 +85,7 @@ function renderGroups() {
         renderGroups();
         renderSkills();
         clearPanel();
+        notifySkillsChanged();
       });
     });
     container.appendChild(item);
@@ -135,6 +137,7 @@ function renderSkills() {
         if (selectedSkillId === s.id) clearPanel();
         await refreshData();
         renderSkills();
+        notifySkillsChanged();
       });
     });
     container.appendChild(card);
@@ -593,6 +596,10 @@ document.getElementById('exportBtn').addEventListener('click', async () => {
 });
 
 // ── Utils ──────────────────────────────────────────────────
+
+function notifySkillsChanged() {
+  chrome.runtime.sendMessage({ type: 'skillsChanged' }, () => {});
+}
 
 function el(tag, props) { const e = document.createElement(tag); Object.assign(e, props); return e; }
 function esc(s) { return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
