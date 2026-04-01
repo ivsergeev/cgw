@@ -12,6 +12,17 @@ let autoReconnect = false; // only reconnect if user started connection
 let reconnectTimer = null;
 let connecting = false;
 
+// ── Crypto helper (Web Crypto API for Service Worker) ─────
+
+async function hmacSHA256(key, message) {
+  const enc = new TextEncoder();
+  const cryptoKey = await crypto.subtle.importKey(
+    'raw', enc.encode(key), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
+  );
+  const sig = await crypto.subtle.sign('HMAC', cryptoKey, enc.encode(message));
+  return Array.from(new Uint8Array(sig)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
 // ── WebSocket connection ───────────────────────────────────
 
 async function connect() {
@@ -42,19 +53,52 @@ async function connect() {
   try {
     const socket = new WebSocket(wsUrl);
 
+    let serverAuthenticated = false;
+    let challengeSent = false; // tracks that we answered a real challenge
+
     socket.onopen = () => {
-      ws = socket;
-      connected = true;
       connecting = false;
-      autoReconnect = true; // after successful connect, enable auto-reconnect
-      startKeepalive();
-      console.log('[CGW] Подключено к cgw_mcp');
+      console.log('[CGW] WS открыт, ожидание challenge от сервера...');
     };
 
     socket.onmessage = async (event) => {
       try {
-        const request = JSON.parse(event.data);
-        const response = await handleMcpRequest(request);
+        const msg = JSON.parse(event.data);
+
+        // ── Mutual auth: respond to server challenge ──
+        if (!serverAuthenticated) {
+          if (msg.type === 'challenge' && msg.challenge && msg.serverProof && !challengeSent) {
+            // Verify server proof: HMAC-SHA256(extensionToken, "server:" + challenge)
+            const expectedServerProof = await hmacSHA256(token, 'server:' + msg.challenge);
+            if (expectedServerProof !== msg.serverProof) {
+              console.warn('[CGW] Server proof invalid — not a genuine cgw_mcp server');
+              socket.close();
+              return;
+            }
+            // Server is authentic. Send client proof: HMAC-SHA256(extensionToken, "client:" + challenge)
+            const hmac = await hmacSHA256(token, 'client:' + msg.challenge);
+            socket.send(JSON.stringify({ type: 'challenge-response', hmac }));
+            challengeSent = true;
+            return;
+          }
+          if (msg.type === 'authenticated' && challengeSent) {
+            // Only accept if we actually sent a challenge response first
+            serverAuthenticated = true;
+            ws = socket;
+            connected = true;
+            autoReconnect = true;
+            startKeepalive();
+            console.log('[CGW] Подключено к cgw_mcp (mutual auth OK)');
+            return;
+          }
+          // Unexpected message or wrong sequence — server is not genuine
+          console.warn('[CGW] Invalid auth sequence from server, closing');
+          socket.close();
+          return;
+        }
+
+        // ── Normal message processing (only after mutual auth) ──
+        const response = await handleMcpRequest(msg);
         if (response && socket.readyState === WebSocket.OPEN) {
           socket.send(JSON.stringify(response));
         }

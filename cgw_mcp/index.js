@@ -364,18 +364,65 @@ function startServer() {
 
     wss.handleUpgrade(req, socket, head, (ws) => {
       if (extWs && extWs.readyState === 1) extWs.close();
-      extWs = ws;
-      extName = (url.searchParams.get('name') || 'default').replace(/[\r\n\t]/g, '').slice(0, 64);
-      ws.isAlive = true;
-      log('INFO', `Extension connected: "${extName}"`);
 
-      ws.on('pong', () => { ws.isAlive = true; });
+      const pendingName = (url.searchParams.get('name') || 'default').replace(/[\r\n\t]/g, '').slice(0, 64);
+
+      // ── Mutual auth: both sides prove they know extensionToken ──
+      // 1. Server sends challenge + serverProof (HMAC of "server:" + challenge)
+      // 2. Extension verifies serverProof, sends clientProof (HMAC of "client:" + challenge)
+      // 3. Server verifies clientProof → authenticated
+      const challenge = crypto.randomBytes(32).toString('hex');
+      const serverProof = crypto.createHmac('sha256', config.extensionToken)
+        .update('server:' + challenge).digest('hex');
+      let authenticated = false;
+
+      ws.send(JSON.stringify({ type: 'challenge', challenge, serverProof }));
+
+      const authTimeout = setTimeout(() => {
+        if (!authenticated) {
+          log('WARN', 'Extension challenge-response timeout');
+          ws.close();
+        }
+      }, 5000);
 
       ws.on('message', (data) => {
         ws.isAlive = true;
+
+        // First message must be challenge response
+        if (!authenticated) {
+          try {
+            const msg = JSON.parse(data);
+            if (msg.type !== 'challenge-response' || !msg.hmac) {
+              log('WARN', 'Extension sent invalid challenge response');
+              ws.close();
+              return;
+            }
+            // Verify client HMAC
+            const expected = crypto.createHmac('sha256', config.extensionToken)
+              .update('client:' + challenge).digest('hex');
+            if (!timingSafeEqual(msg.hmac, expected)) {
+              log('WARN', 'Extension challenge-response HMAC mismatch');
+              ws.close();
+              return;
+            }
+            // Mutual auth succeeded
+            authenticated = true;
+            clearTimeout(authTimeout);
+            extWs = ws;
+            extName = pendingName;
+            ws.isAlive = true;
+            log('INFO', `Extension connected: "${extName}" (mutual auth OK)`);
+            ws.send(JSON.stringify({ type: 'authenticated' }));
+          } catch (err) {
+            log('WARN', `Extension auth error: ${err.message}`);
+            ws.close();
+          }
+          return;
+        }
+
+        // Normal message processing (only after auth)
         try {
           const msg = JSON.parse(data);
-          // Notifications (no id) — keepalive pings, etc. Just ignore.
           if (msg.id === undefined || msg.id === null) return;
           const key = String(msg.id);
           const p = pending.get(key);
@@ -390,7 +437,10 @@ function startServer() {
         }
       });
 
+      ws.on('pong', () => { ws.isAlive = true; });
+
       ws.on('close', () => {
+        clearTimeout(authTimeout);
         if (extWs === ws) { extWs = null; extName = ''; }
         log('INFO', 'Extension disconnected');
       });
