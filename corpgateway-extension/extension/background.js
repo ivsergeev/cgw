@@ -213,9 +213,10 @@ function updateIcon() {
   // Broadcast overlay state to all tabs
   chrome.tabs.query({}, (tabs) => {
     for (const tab of tabs) {
-      try {
-        chrome.tabs.sendMessage(tab.id, { type: 'cgw-overlay', connected });
-      } catch {}
+      if (!tab.id || tab.id < 0) continue;
+      // skip chrome:// and other restricted URLs where content scripts can't run
+      if (tab.url && (tab.url.startsWith('chrome://') || tab.url.startsWith('chrome-extension://') || tab.url.startsWith('edge://'))) continue;
+      chrome.tabs.sendMessage(tab.id, { type: 'cgw-overlay', connected }).catch(() => {});
     }
   });
 }

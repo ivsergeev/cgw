@@ -132,8 +132,8 @@
   // Query initial state
   try {
     chrome.runtime.sendMessage({ type: 'getStatus' }, (res) => {
-      if (chrome.runtime.lastError) return;
+      if (chrome.runtime.lastError) return; // extension context not ready
       if (res && res.connected) show();
     });
-  } catch {}
+  } catch {} // ignore if extension context invalidated
 })();
