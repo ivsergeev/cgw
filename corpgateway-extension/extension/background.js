@@ -47,6 +47,7 @@ async function connect() {
       connected = true;
       connecting = false;
       autoReconnect = true; // after successful connect, enable auto-reconnect
+      startKeepalive();
       console.log('[CGW] Подключено к cgw_mcp');
     };
 
@@ -65,6 +66,7 @@ async function connect() {
     socket.onclose = () => {
       if (ws === socket) { ws = null; connected = false; }
       connecting = false;
+      stopKeepalive();
       console.log('[CGW] WebSocket закрыт');
       if (autoReconnect) scheduleReconnect();
     };
@@ -83,6 +85,7 @@ async function connect() {
 function disconnect() {
   autoReconnect = false;
   clearTimeout(reconnectTimer);
+  stopKeepalive();
   if (ws) {
     const old = ws;
     ws = null;
@@ -97,6 +100,31 @@ function disconnect() {
 function scheduleReconnect() {
   clearTimeout(reconnectTimer);
   reconnectTimer = setTimeout(connect, 3000);
+}
+
+// ── WebSocket keepalive ──────────────────────────────────────
+// Sends ping every 25s to:
+// 1. Prevent server from closing idle connection
+// 2. Keep Service Worker alive (each message resets the 30s SW idle timer)
+
+let keepaliveTimer = null;
+
+function startKeepalive() {
+  stopKeepalive();
+  keepaliveTimer = setInterval(() => {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      try {
+        ws.send(JSON.stringify({ jsonrpc: '2.0', method: 'ping' }));
+      } catch {}
+    }
+  }, 25000);
+}
+
+function stopKeepalive() {
+  if (keepaliveTimer) {
+    clearInterval(keepaliveTimer);
+    keepaliveTimer = null;
+  }
 }
 
 // ── Auth header interception ───────────────────────────────

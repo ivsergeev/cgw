@@ -301,11 +301,17 @@ function startServer() {
       if (extWs && extWs.readyState === 1) extWs.close();
       extWs = ws;
       extName = url.searchParams.get('name') || 'default';
+      ws.isAlive = true;
       log('INFO', `Extension connected: "${extName}"`);
 
+      ws.on('pong', () => { ws.isAlive = true; });
+
       ws.on('message', (data) => {
+        ws.isAlive = true;
         try {
           const msg = JSON.parse(data);
+          // Notifications (no id) — keepalive pings, etc. Just ignore.
+          if (msg.id === undefined || msg.id === null) return;
           const key = String(msg.id);
           const p = pending.get(key);
           if (p) {
@@ -464,6 +470,22 @@ function startServer() {
     req.on('end', () => cb(null, Buffer.concat(chunks).toString()));
     req.on('error', cb);
   }
+
+  // ── WebSocket keepalive ─────────────────────────────────
+  // Server-side ping every 30s — detects dead connections
+  // (browser crash, network drop without TCP FIN)
+
+  setInterval(() => {
+    if (extWs) {
+      if (!extWs.isAlive) {
+        log('WARN', 'Extension ping timeout, closing connection');
+        extWs.terminate();
+        return;
+      }
+      extWs.isAlive = false;
+      try { extWs.ping(); } catch {}
+    }
+  }, 30000);
 
   // ── Start listener ───────────────────────────────────────
 

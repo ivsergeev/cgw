@@ -123,6 +123,24 @@ async function readCapturedAuth(tabId, origin) {
   return null;
 }
 
+// Close orphaned pinned tabs on an origin that are not tracked in the pool.
+// This prevents tab duplication when evict+recreate races or SW restarts.
+async function closeOrphanedTabs(origin) {
+  try {
+    const tabs = await chrome.tabs.query({ pinned: true });
+    const pooledTabId = originPool.get(origin)?.tabId;
+    for (const tab of tabs) {
+      if (tab.id === pooledTabId) continue; // don't close pooled tab
+      try {
+        if (tab.url && new URL(tab.url).origin.toLowerCase() === origin.toLowerCase()) {
+          console.log(`[CGW] Closing orphaned tab ${tab.id} on ${origin}`);
+          await chrome.tabs.remove(tab.id);
+        }
+      } catch {}
+    }
+  } catch {}
+}
+
 // ── Origin tab management ────────────────────────────────────
 
 async function getOrCreateOriginTab(origin) {
@@ -141,6 +159,9 @@ async function getOrCreateOriginTab(origin) {
         originPool.delete(origin);
       }
     }
+
+    // Close any orphaned pinned tabs on this origin (prevents duplicates)
+    await closeOrphanedTabs(origin);
 
     // Register auth interceptor BEFORE creating tab
     // (runs at document_start, captures auth from SPA's initial requests)
