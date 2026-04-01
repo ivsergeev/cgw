@@ -209,6 +209,15 @@ function updateIcon() {
 
   chrome.action.setIcon({ path: connected ? ICON_ACTIVE : ICON_GRAY });
   chrome.action.setTitle({ title: connected ? 'CorpGateway — MCP подключён' : 'CorpGateway — не подключён' });
+
+  // Broadcast overlay state to all tabs
+  chrome.tabs.query({}, (tabs) => {
+    for (const tab of tabs) {
+      try {
+        chrome.tabs.sendMessage(tab.id, { type: 'cgw-overlay', connected });
+      } catch {}
+    }
+  });
 }
 
 setInterval(updateIcon, 1000);
