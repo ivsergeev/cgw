@@ -5,7 +5,9 @@
   if (window.__cgwOverlayInjected) return;
   window.__cgwOverlayInjected = true;
 
-  const BANNER_HEIGHT = 32;
+  // Only show banner in top frame, but show border in all frames
+  const isTopFrame = window === window.top;
+  const BANNER_HEIGHT = 36;
 
   // Create host element with Shadow DOM for style isolation
   const host = document.createElement('div');
@@ -13,7 +15,6 @@
   host.style.cssText = 'all:initial !important; position:fixed !important; top:0 !important; left:0 !important; width:0 !important; height:0 !important; z-index:2147483647 !important; pointer-events:none !important;';
   const shadow = host.attachShadow({ mode: 'closed' });
 
-  // Styles
   const style = document.createElement('style');
   style.textContent = `
     :host { all: initial !important; }
@@ -24,25 +25,30 @@
       left: 0;
       right: 0;
       height: ${BANNER_HEIGHT}px;
-      background: linear-gradient(135deg, #4f46e5, #7c3aed, #6366f1);
+      background: linear-gradient(90deg, #4f46e5, #7c3aed, #6366f1, #4f46e5);
+      background-size: 300% 100%;
+      animation: cgw-shimmer 6s linear infinite;
       color: #fff;
-      font: 600 13px/32px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font: 600 13px/${BANNER_HEIGHT}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       text-align: center;
-      letter-spacing: 0.3px;
+      letter-spacing: 0.5px;
       z-index: 2147483647;
       pointer-events: none;
       display: none;
-      box-shadow: 0 2px 8px rgba(79, 70, 229, 0.4);
+      box-shadow: 0 2px 12px rgba(79, 70, 229, 0.5);
     }
 
-    .cgw-banner.visible {
-      display: block;
-    }
+    .cgw-banner.visible { display: block; }
 
     .cgw-banner svg {
       vertical-align: middle;
-      margin-right: 6px;
+      margin-right: 8px;
       margin-top: -2px;
+    }
+
+    @keyframes cgw-shimmer {
+      0% { background-position: 0% 50%; }
+      100% { background-position: 300% 50%; }
     }
 
     .cgw-border {
@@ -51,53 +57,63 @@
       left: 0;
       right: 0;
       bottom: 0;
-      border: 3px solid #6366f1;
-      border-radius: 0;
       pointer-events: none;
       z-index: 2147483646;
       display: none;
-      box-shadow: inset 0 0 0 1px rgba(99, 102, 241, 0.3);
+      border: 4px solid #6366f1;
+      box-shadow:
+        inset 0 0 15px rgba(99, 102, 241, 0.15),
+        0 0 15px rgba(99, 102, 241, 0.15);
+    }
+
+    .cgw-border.visible { display: block; }
+
+    @keyframes cgw-glow {
+      0%, 100% { box-shadow: inset 0 0 15px rgba(99,102,241,0.15), 0 0 15px rgba(99,102,241,0.15); }
+      50% { box-shadow: inset 0 0 25px rgba(99,102,241,0.25), 0 0 25px rgba(99,102,241,0.25); }
     }
 
     .cgw-border.visible {
-      display: block;
+      animation: cgw-glow 3s ease-in-out infinite;
     }
   `;
 
-  // Banner
-  const banner = document.createElement('div');
-  banner.className = 'cgw-banner';
-  banner.innerHTML = `
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-      <circle cx="12" cy="12" r="10"/>
-      <path d="M8 12h.01M12 12h.01M16 12h.01"/>
-    </svg>
-    CorpGateway — браузер под управлением агента
-  `;
+  shadow.appendChild(style);
 
-  // Border
+  // Banner — only in top frame
+  let banner = null;
+  if (isTopFrame) {
+    banner = document.createElement('div');
+    banner.className = 'cgw-banner';
+    banner.innerHTML = `
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 2a4 4 0 0 1 4 4v2H8V6a4 4 0 0 1 4-4z"/>
+        <rect x="3" y="8" width="18" height="12" rx="2"/>
+        <circle cx="12" cy="15" r="2"/>
+      </svg>
+      CorpGateway — браузер под управлением агента
+    `;
+    shadow.appendChild(banner);
+  }
+
+  // Border — all frames
   const border = document.createElement('div');
   border.className = 'cgw-border';
-
-  shadow.appendChild(style);
-  shadow.appendChild(banner);
   shadow.appendChild(border);
 
   function show() {
-    banner.classList.add('visible');
+    if (banner) banner.classList.add('visible');
     border.classList.add('visible');
-    document.documentElement.style.setProperty('--cgw-banner-offset', BANNER_HEIGHT + 'px');
   }
 
   function hide() {
-    banner.classList.remove('visible');
+    if (banner) banner.classList.remove('visible');
     border.classList.remove('visible');
-    document.documentElement.style.removeProperty('--cgw-banner-offset');
   }
 
   // Inject into page
   function inject() {
-    if (!document.body) {
+    if (!document.documentElement) {
       document.addEventListener('DOMContentLoaded', inject, { once: true });
       return;
     }
