@@ -55,26 +55,23 @@
       position: fixed;
       top: 0;
       left: 0;
-      right: 0;
-      bottom: 0;
+      width: 100vw;
+      height: 100vh;
       pointer-events: none;
       z-index: 2147483646;
       display: none;
-      border: 4px solid #6366f1;
-      box-shadow:
-        inset 0 0 15px rgba(99, 102, 241, 0.15),
-        0 0 15px rgba(99, 102, 241, 0.15);
-    }
-
-    .cgw-border.visible { display: block; }
-
-    @keyframes cgw-glow {
-      0%, 100% { box-shadow: inset 0 0 15px rgba(99,102,241,0.15), 0 0 15px rgba(99,102,241,0.15); }
-      50% { box-shadow: inset 0 0 25px rgba(99,102,241,0.25), 0 0 25px rgba(99,102,241,0.25); }
+      outline: 4px solid #6366f1;
+      outline-offset: -4px;
     }
 
     .cgw-border.visible {
+      display: block;
       animation: cgw-glow 3s ease-in-out infinite;
+    }
+
+    @keyframes cgw-glow {
+      0%, 100% { outline-color: rgba(99, 102, 241, 0.8); }
+      50% { outline-color: rgba(99, 102, 241, 1); }
     }
   `;
 
