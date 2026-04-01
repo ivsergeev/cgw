@@ -140,6 +140,8 @@ The agent receives 6 meta-tools:
 
 ## Skill Configuration
 
+> **Detailed guide:** [Creating Custom Skills](docs/SKILLS.md) ([Русский](docs/SKILLS.ru.md))
+
 ### Via extension UI
 
 Extension settings (`chrome://extensions` → CorpGateway → Details → Extension options):
@@ -373,9 +375,11 @@ If the extension is installed in multiple Chrome profiles:
 │   ├── mattermost.json
 │   └── outlook.json
 │
-├── docs/                       # Documentation translations
-│   ├── README.ru.md
-│   └── SETUP.ru.md
+├── docs/                       # Documentation
+│   ├── README.ru.md            # README (Russian)
+│   ├── SETUP.ru.md             # Setup guide (Russian)
+│   ├── SKILLS.md               # Creating custom skills
+│   └── SKILLS.ru.md            # Creating custom skills (Russian)
 │
 ├── README.md                   # This file
 └── SETUP.md                    # Installation guide

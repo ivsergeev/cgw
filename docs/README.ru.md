@@ -140,6 +140,8 @@ node index.js
 
 ## Настройка скилов
 
+> **Подробное руководство:** [Создание кастомных скилов](SKILLS.ru.md) ([English](SKILLS.md))
+
 ### Через UI расширения
 
 Настройки расширения (`chrome://extensions` → CorpGateway → Details → Extension options):

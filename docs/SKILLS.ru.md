@@ -1,0 +1,390 @@
+# Создание кастомных скилов
+
+[English version](SKILLS.md)
+
+Пошаговое руководство по созданию скилов с нуля — от простого GET-запроса до сложных POST с шаблонами.
+
+---
+
+## Что такое скил?
+
+Скил — это настроенный вызов API, который AI-агент может вызвать. Он определяет:
+- Какой URL вызывать
+- Какой HTTP-метод использовать
+- Какие параметры агент должен передать
+- Как форматировать тело запроса и заголовки
+- Что извлечь из ответа
+
+Скилы организованы в **группы** (напр. «Jira», «GitLab», «Внутренний API»).
+
+---
+
+## Быстрый пример
+
+Прежде чем углубляться в детали, вот как выглядит готовый скил:
+
+**Цель:** дать агенту возможность получить задачу Jira по ключу.
+
+| Поле | Значение |
+|------|----------|
+| Название | `jira_issue` |
+| Описание | Получить детали задачи по ключу |
+| Группа | Jira |
+| URL | `https://jira.company.com/rest/api/2/issue/{key}` |
+| Метод | GET |
+| Параметры | `key` (String, обязательный) |
+| Фильтр ответа | `key, fields.summary, fields.status.name, fields.assignee.displayName` |
+
+Агент вызывает так:
+```
+cgw_invoke(skill=jira_issue, params={key: "PROJ-123"})
+```
+
+Расширение делает GET-запрос к `https://jira.company.com/rest/api/2/issue/PROJ-123`, используя сессию Jira из браузера, фильтрует ответ и возвращает агенту только нужные поля.
+
+---
+
+## Создание скила через UI
+
+1. Откройте настройки расширения (иконка расширения → ⚙ Настройки)
+2. Нажмите **+ Скил** в верхней панели
+3. Заполните поля (описаны ниже)
+4. Нажмите **Сохранить скил**
+5. Используйте кнопку **▶ Тест** для проверки
+
+---
+
+## Справочник полей скила
+
+### Основное
+
+| Поле | Обяз. | Описание |
+|------|-------|----------|
+| **Название** | Да | Имя функции для агента. Используйте `snake_case`: `get_user`, `search_issues` |
+| **Описание** | Нет | Что делает скил. Показывается агенту в `cgw_list` |
+| **Группа** | Да | К какой группе относится скил |
+
+### Запрос
+
+| Поле | Обяз. | Описание |
+|------|-------|----------|
+| **URL** | Да | Эндпоинт API. Поддерживает path-параметры: `https://api.example.com/users/{userId}` |
+| **HTTP метод** | Да | GET, POST, PUT, PATCH, DELETE |
+| **Origin URL** | Нет | Откуда брать авторизацию, если отличается от домена URL (см. [fetchOrigin](#fetchorigin)) |
+| **Шаблон тела** | Нет | JSON-шаблон для POST/PUT/PATCH (см. [Шаблоны тела](#шаблоны-тела)) |
+| **Заголовки** | Нет | Кастомные HTTP-заголовки. Значения поддерживают `{{param}}` |
+
+### Ответ
+
+| Поле | Обяз. | Описание |
+|------|-------|----------|
+| **Фильтр ответа** | Нет | Dot-notation пути через запятую для извлечения полей из ответа (см. [Фильтрация ответа](#фильтрация-ответа)) |
+
+### Параметры
+
+Каждый параметр имеет:
+
+| Поле | Описание |
+|------|----------|
+| **Название** | Имя параметра. Используется в URL `{name}`, теле `{{name}}`, заголовках `{{name}}` |
+| **Тип** | `String`, `Integer`, `Float`, `Boolean`, `Date` |
+| **Обязательный** | Должен ли агент передать этот параметр |
+| **Описание** | Подсказка для агента в `cgw_schema` |
+
+---
+
+## Подстановка параметров
+
+Параметры подставляются в трёх местах, каждое с разным синтаксисом:
+
+### 1. URL path: `{param}`
+
+```
+URL:       https://api.example.com/users/{userId}/posts/{postId}
+Параметры: { userId: "123", postId: "abc" }
+Результат: https://api.example.com/users/123/posts/abc
+```
+
+- Значения URL-кодируются автоматически (`пробел` → `%20`)
+- Использованные параметры не попадают в query string
+
+### 2. Query string (автоматически для GET/DELETE)
+
+Параметры, **не** использованные в URL path, добавляются в query string:
+
+```
+URL:       https://api.example.com/search
+Метод:     GET
+Параметры: { query: "тестовый запрос", limit: "10" }
+Результат: https://api.example.com/search?query=тестовый+запрос&limit=10
+```
+
+### 3. Шаблон тела: `{{param}}`
+
+```
+Шаблон:    {"email": "{{email}}", "count": {{count}}, "active": {{active}}}
+Параметры: { email: "john@test.com", count: "5", active: "true" }
+Результат: {"email": "john@test.com", "count": 5, "active": true}
+```
+
+Подстановка по типу:
+
+| Тип | Шаблон | Ввод | Результат |
+|-----|--------|------|-----------|
+| String | `"name": "{{name}}"` | `hello "world"` | `"name": "hello \"world\""` |
+| Integer | `"count": {{count}}` | `42` | `"count": 42` |
+| Float | `"price": {{price}}` | `9.99` | `"price": 9.99` |
+| Boolean | `"active": {{active}}` | `true` / `1` / `yes` | `"active": true` |
+
+> **Важно:** строковые значения в шаблоне должны быть в кавычках. Числа и булевы — без кавычек.
+
+### 4. Заголовки: `{{param}}`
+
+```
+Заголовок: X-Custom: Bearer {{token}}
+Параметры: { token: "abc123" }
+Результат: X-Custom: Bearer abc123
+```
+
+---
+
+## Шаблоны тела
+
+Используются для POST, PUT, PATCH запросов. Напишите JSON-шаблон с плейсхолдерами `{{param}}`:
+
+**Простой:**
+```json
+{
+  "title": "{{title}}",
+  "body": "{{content}}"
+}
+```
+
+**Со смешанными типами:**
+```json
+{
+  "query": "{{searchText}}",
+  "maxResults": {{limit}},
+  "includeArchived": {{archived}}
+}
+```
+
+**Без шаблона (плоский JSON):**
+Если шаблон тела пустой, все оставшиеся параметры (не использованные в URL) отправляются как плоский JSON-объект:
+
+```
+URL:       https://api.example.com/users
+Метод:     POST
+Параметры: { name: "John", email: "john@test.com" }
+Тело:      {"name": "John", "email": "john@test.com"}
+```
+
+---
+
+## Фильтрация ответа
+
+Поле `Фильтр ответа` позволяет извлечь только нужные поля из ответа API, убирая лишнее для агента.
+
+**Синтаксис:** dot-notation пути через запятую.
+
+**Пример:**
+
+API возвращает:
+```json
+{
+  "id": 10001,
+  "key": "PROJ-123",
+  "fields": {
+    "summary": "Исправить баг логина",
+    "status": { "name": "Open", "id": "1" },
+    "priority": { "name": "High", "id": "2" },
+    "assignee": { "displayName": "Иван", "email": "ivan@corp.com" }
+  }
+}
+```
+
+Фильтр: `key, fields.summary, fields.status.name, fields.assignee.displayName`
+
+Результат для агента:
+```json
+{
+  "key": "PROJ-123",
+  "fields": {
+    "summary": "Исправить баг логина",
+    "status": { "name": "Open" },
+    "assignee": { "displayName": "Иван" }
+  }
+}
+```
+
+**Массивы** обрабатываются автоматически — фильтр применяется к каждому элементу:
+
+Фильтр `issues.key, issues.fields.summary` на ответе поиска извлечёт эти поля из каждой задачи в массиве.
+
+**Пустой фильтр** возвращает полный ответ.
+
+---
+
+## fetchOrigin
+
+У некоторых корпоративных API домен API и домен веб-интерфейса (где вы логинитесь) различаются:
+
+- Веб-интерфейс (где вы залогинены): `https://app.corp.com`
+- API-эндпоинт: `https://api.corp.com/v1/data`
+
+Расширение захватывает auth-токены с того origin, где вы залогинены. Если API на другом домене, укажите **Origin URL** — домен веб-интерфейса:
+
+```
+URL:          https://api.corp.com/v1/issues
+Origin URL:   https://app.corp.com
+```
+
+Расширение:
+1. Откроет фоновую вкладку на `https://app.corp.com`
+2. Захватит заголовок Authorization с этого origin
+3. Использует его при запросах к `https://api.corp.com`
+
+**Когда использовать:** только когда домен API отличается от домена логина. В большинстве случаев оставляйте пустым.
+
+---
+
+## Типичные паттерны
+
+### GET с path-параметром
+
+```
+Название:       get_user
+URL:            https://api.example.com/users/{userId}
+Метод:          GET
+Параметры:      userId (String, обязательный)
+Фильтр ответа: id, name, email, role
+```
+
+### GET с query-параметрами (поиск)
+
+```
+Название:   search_users
+URL:        https://api.example.com/users
+Метод:      GET
+Параметры:  query (String, обязательный)
+            limit (Integer, необязательный)
+            offset (Integer, необязательный)
+```
+
+Агент вызывает `search_users(query="john", limit="10")` → GET `https://api.example.com/users?query=john&limit=10`
+
+### POST с JSON-телом
+
+```
+Название:     create_comment
+URL:          https://api.example.com/issues/{issueKey}/comments
+Метод:        POST
+Параметры:    issueKey (String, обязательный)
+              body (String, обязательный)
+Шаблон тела:  {"body": "{{body}}"}
+```
+
+### PUT со смешанными типами
+
+```
+Название:     update_settings
+URL:          https://api.example.com/users/{userId}/settings
+Метод:        PUT
+Параметры:    userId (String, обязательный)
+              theme (String, обязательный)
+              notifications (Boolean, обязательный)
+              fontSize (Integer, необязательный)
+Шаблон тела:  {"theme": "{{theme}}", "notifications": {{notifications}}, "fontSize": {{fontSize}}}
+```
+
+### DELETE
+
+```
+Название:   delete_comment
+URL:        https://api.example.com/comments/{commentId}
+Метод:      DELETE
+Параметры:  commentId (String, обязательный)
+```
+
+---
+
+## Создание файла пресета
+
+Для распространения скилов в команде создайте JSON-файл пресета:
+
+```json
+{
+  "Groups": [
+    {
+      "Id": "myapi",
+      "Name": "My API",
+      "Description": "Внутренний API компании",
+      "Color": "#4f46e5"
+    }
+  ],
+  "Skills": [
+    {
+      "Name": "get_user",
+      "Description": "Получить профиль пользователя по ID",
+      "GroupId": "myapi",
+      "Url": "https://MY_API_URL/users/{userId}",
+      "HttpMethod": "GET",
+      "Parameters": [
+        {
+          "Name": "userId",
+          "Description": "ID пользователя",
+          "Type": "String",
+          "Required": true
+        }
+      ],
+      "Headers": {},
+      "BodyTemplate": "",
+      "ResponseFilter": "id, name, email"
+    },
+    {
+      "Name": "search_users",
+      "Description": "Поиск пользователей по имени или email",
+      "GroupId": "myapi",
+      "Url": "https://MY_API_URL/users/search",
+      "HttpMethod": "GET",
+      "Parameters": [
+        {
+          "Name": "q",
+          "Description": "Поисковый запрос",
+          "Type": "String",
+          "Required": true
+        },
+        {
+          "Name": "limit",
+          "Description": "Макс. результатов (по умолчанию 20)",
+          "Type": "Integer",
+          "Required": false
+        }
+      ],
+      "Headers": {},
+      "BodyTemplate": "",
+      "ResponseFilter": "results.id, results.name, total"
+    }
+  ]
+}
+```
+
+После импорта замените `MY_API_URL` на реальный домен.
+
+---
+
+## Тестирование
+
+1. Откройте настройки расширения
+2. Нажмите на карточку скила
+3. Нажмите синюю кнопку **▶ Тест**
+4. Заполните значения параметров
+5. Нажмите **▶ Запустить**
+6. Проверьте результат
+
+**Советы по отладке:**
+
+- Ошибка 401 → залогиньтесь в систему в браузере
+- Ошибка сети → проверьте правильность URL и доступность системы
+- Подробные логи → `chrome://extensions` → CorpGateway → **Inspect views: service worker**
+- Все вызовы записываются в audit log (инструмент `cgw_audit`)
