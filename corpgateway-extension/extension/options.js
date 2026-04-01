@@ -29,14 +29,14 @@ async function refreshData() {
   allSkills = await getSkills();
 }
 
-// ── Bridge status ──────────────────────────────────────────
+// ── MCP connection status ──────────────────────────────────
 
 function checkBridgeStatus() {
   chrome.runtime.sendMessage({ type: 'getStatus' }, (status) => {
     const dot = document.getElementById('bridgeDot');
     const text = document.getElementById('bridgeStatus');
     dot.className = status?.connected ? 'dot on' : 'dot off';
-    text.textContent = status?.connected ? 'Bridge: connected' : 'Bridge: disconnected';
+    text.textContent = status?.connected ? 'MCP: connected' : 'MCP: disconnected';
   });
   setTimeout(checkBridgeStatus, 5000);
 }
@@ -388,19 +388,20 @@ async function openSettings() {
     <input type="text" id="cfgName" value="${esc(config.instanceName || '')}" placeholder="напр. Chrome Рабочий">
     <div class="hint">Для идентификации при нескольких браузерах</div>
 
-    <label>URL Bridge</label>
+    <label>URL сервера MCP</label>
     <input type="text" id="cfgBridgeUrl" class="mono" value="${esc(config.bridgeUrl || 'http://localhost:9877')}" placeholder="http://localhost:9877">
-    <div class="hint">HTTP-адрес демона bridge</div>
+    <div class="hint">HTTP-адрес cgw_mcp сервера</div>
 
     <label>Токен расширения</label>
     <div class="token-row">
-      <input type="text" id="cfgExtToken" class="mono" value="${esc(config.extensionToken || '')}" placeholder="From ~/.corpgateway/bridge.json → extensionToken">
+      <input type="password" id="cfgExtToken" class="mono" value="${esc(config.extensionToken || '')}" placeholder="From ~/.corpgateway/cgw_mcp.json → extensionToken" autocomplete="off">
+      <button class="btn btn-ghost btn-sm" id="toggleExtToken" title="Показать/скрыть">👁</button>
       <button class="btn btn-ghost btn-sm" id="copyExtToken">Копировать</button>
     </div>
-    <div class="hint">Скопируйте extensionToken из ~/.corpgateway/bridge.json</div>
+    <div class="hint">Скопируйте extensionToken из ~/.corpgateway/cgw_mcp.json</div>
 
     <div class="hint" style="margin-top:8px;padding:10px;background:#f0f4ff;border-radius:8px;color:#374151">
-      Токен агента и MCP-инструкция настраиваются в <code style="background:#e5e7eb;padding:2px 4px;border-radius:4px">~/.corpgateway/bridge.json</code>
+      Токен агента и MCP-инструкция настраиваются в <code style="background:#e5e7eb;padding:2px 4px;border-radius:4px">~/.corpgateway/cgw_mcp.json</code>
     </div>
 
     <div class="flex" style="margin-top:16px">
@@ -409,6 +410,10 @@ async function openSettings() {
     </div>
   `;
 
+  pc.querySelector('#toggleExtToken').addEventListener('click', () => {
+    const inp = pc.querySelector('#cfgExtToken');
+    inp.type = inp.type === 'password' ? 'text' : 'password';
+  });
   pc.querySelector('#copyExtToken').addEventListener('click', () => {
     navigator.clipboard.writeText(pc.querySelector('#cfgExtToken').value);
     toast('Скопировано', 'success');

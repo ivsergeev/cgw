@@ -42,7 +42,7 @@ export async function handleMcpRequest(request) {
 // ── initialize ──────────────────────────────────────────────
 
 function handleInitialize(id) {
-  // Note: initialize is normally handled by bridge (which has mcpInstructions).
+  // Note: initialize is normally handled by cgw_mcp server (which has mcpInstructions).
   // This is a fallback if called directly to the extension.
   return jsonRpcResult(id, {
     protocolVersion: '2025-03-26',

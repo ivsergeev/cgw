@@ -5,7 +5,7 @@ import { handleMcpRequest } from './lib/mcp.js';
 import { setAuthHeader, cleanupInterceptors } from './lib/executor.js';
 import { getConfig, getEnabledSkills } from './lib/storage.js';
 
-const DEFAULT_BRIDGE_URL = 'http://localhost:9877';
+const DEFAULT_BRIDGE_URL = 'http://localhost:9877'; // cgw_mcp server URL
 let ws = null;
 let connected = false;
 let autoReconnect = false; // only reconnect if user started connection
@@ -147,12 +147,30 @@ chrome.webRequest.onSendHeaders.addListener(
 
 // ── Message handler for popup/options ──────────────────────
 
+function isExtensionSender(sender) {
+  // Accept messages only from extension's own pages (popup, options, service worker)
+  // and extension's own content scripts
+  if (sender.id !== chrome.runtime.id) return false;
+  // Extension pages (popup.html, options.html) have url starting with chrome-extension://
+  if (sender.url && sender.url.startsWith(chrome.runtime.getURL(''))) return true;
+  // Content scripts injected by this extension have sender.id match but no extension URL
+  // They should only access getStatus (read-only), not sensitive operations
+  return false;
+}
+
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  // getStatus is safe to expose to content scripts (read-only, used by overlay)
   if (msg.type === 'getStatus') {
     getConfig().then(cfg => {
       sendResponse({ connected, autoReconnect, instanceName: cfg.instanceName || '' });
     });
     return true;
+  }
+
+  // All operations below require sender to be extension's own pages
+  if (!isExtensionSender(sender)) {
+    console.warn('[CGW] Rejected message from untrusted sender:', sender.url || sender.id);
+    return false;
   }
 
   if (msg.type === 'connect') {

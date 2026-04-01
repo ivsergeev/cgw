@@ -114,6 +114,38 @@ async function deleteSkill(id) {
 
 // ── Import / Export ──────────────────────────────────────────
 
+const VALID_HTTP_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD'];
+const VALID_PARAM_TYPES = ['String', 'Integer', 'Float', 'Boolean', 'Date'];
+
+function validateSkillData(s) {
+  const url = s.Url || s.url || '';
+  if (url) {
+    try {
+      const parsed = new URL(url.replace(/\{[^}]+\}/g, 'placeholder'));
+      if (!['http:', 'https:'].includes(parsed.protocol)) {
+        throw new Error(`Unsupported protocol in URL: ${parsed.protocol}`);
+      }
+    } catch (e) {
+      if (e.message.includes('protocol')) throw e;
+      throw new Error(`Invalid skill URL: ${url}`);
+    }
+  }
+  const method = (s.HttpMethod || s.httpMethod || 'GET').toUpperCase();
+  if (!VALID_HTTP_METHODS.includes(method)) {
+    throw new Error(`Invalid HTTP method: ${method}`);
+  }
+  const params = s.Parameters || s.parameters || [];
+  if (params.length > 50) throw new Error('Too many parameters (max 50)');
+  for (const p of params) {
+    const type = p.Type || p.type || 'String';
+    if (!VALID_PARAM_TYPES.includes(type)) {
+      throw new Error(`Invalid parameter type: ${type}`);
+    }
+  }
+  const headers = s.Headers || s.headers || {};
+  if (Object.keys(headers).length > 20) throw new Error('Too many headers (max 20)');
+}
+
 async function importPreset(json) {
   const data = typeof json === 'string' ? JSON.parse(json) : json;
   const store = await getStore();
@@ -147,6 +179,7 @@ async function importPreset(json) {
       skipped++;
       continue;
     }
+    validateSkillData(s);
     const oldGroupId = s.GroupId || s.groupId || '';
     store.skills.push({
       id: crypto.randomUUID(),

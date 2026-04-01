@@ -113,8 +113,8 @@ function daemonStart() {
       console.log(`Logs:   ${LOG_DIR}`);
       console.log(`PID:    ${PID_PATH}`);
       console.log('');
-      console.log(`Agent token:     ${config.token}`);
-      console.log(`Extension token: ${config.extensionToken}`);
+      console.log(`Agent token:     ${config.token.slice(0, 4)}...${config.token.slice(-4)}`);
+      console.log(`Extension token: ${config.extensionToken.slice(0, 4)}...${config.extensionToken.slice(-4)}`);
     } else {
       console.error('Failed to start — check logs:', path.join(LOG_DIR, 'cgw_mcp_daemon.log'));
       process.exit(1);
@@ -257,15 +257,65 @@ function startServer() {
     logStream.write(line + '\n');
   }
 
+  // ── Security helpers ─────────────────────────────────────
+
+  function timingSafeEqual(a, b) {
+    if (typeof a !== 'string' || typeof b !== 'string') return false;
+    const bufA = Buffer.from(a);
+    const bufB = Buffer.from(b);
+    if (bufA.length !== bufB.length) {
+      crypto.timingSafeEqual(bufA, bufA);
+      return false;
+    }
+    return crypto.timingSafeEqual(bufA, bufB);
+  }
+
+  // ── Rate limiter (auth failures) ────────────────────────
+
+  const authFailures = new Map(); // ip → { count, resetAt }
+  const RATE_LIMIT_MAX = 10;           // max failures per window
+  const RATE_LIMIT_WINDOW = 60_000;    // 1 minute window
+
+  function isRateLimited(ip) {
+    const entry = authFailures.get(ip);
+    if (!entry) return false;
+    if (Date.now() > entry.resetAt) { authFailures.delete(ip); return false; }
+    return entry.count >= RATE_LIMIT_MAX;
+  }
+
+  function recordAuthFailure(ip) {
+    const entry = authFailures.get(ip);
+    if (!entry || Date.now() > entry.resetAt) {
+      authFailures.set(ip, { count: 1, resetAt: Date.now() + RATE_LIMIT_WINDOW });
+    } else {
+      entry.count++;
+    }
+  }
+
+  function getClientIP(req) {
+    return req.socket?.remoteAddress || 'unknown';
+  }
+
+  // Cleanup stale entries every 5 minutes
+  setInterval(() => {
+    const now = Date.now();
+    for (const [ip, entry] of authFailures) {
+      if (now > entry.resetAt) authFailures.delete(ip);
+    }
+  }, 300_000);
+
   // ── State ────────────────────────────────────────────────
 
   let extWs = null;
   let extName = '';
   const pending = new Map();
+  const MAX_PENDING = 100;
 
   // ── HTTP Server ──────────────────────────────────────────
 
   const server = http.createServer((req, res) => {
+    req.setTimeout(60_000);
+    res.setTimeout(60_000);
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type');
@@ -290,7 +340,16 @@ function startServer() {
 
     if (url.pathname !== '/extension/ws') { socket.destroy(); return; }
 
-    if (url.searchParams.get('token') !== config.extensionToken) {
+    const wsIP = req.socket?.remoteAddress || 'unknown';
+    if (isRateLimited(wsIP)) {
+      log('WARN', `Extension WS rate limited: ${wsIP}`);
+      socket.write('HTTP/1.1 429 Too Many Requests\r\n\r\n');
+      socket.destroy();
+      return;
+    }
+
+    if (!timingSafeEqual(url.searchParams.get('token') || '', config.extensionToken)) {
+      recordAuthFailure(wsIP);
       log('WARN', 'Extension WS auth failed');
       socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
       socket.destroy();
@@ -300,7 +359,7 @@ function startServer() {
     wss.handleUpgrade(req, socket, head, (ws) => {
       if (extWs && extWs.readyState === 1) extWs.close();
       extWs = ws;
-      extName = url.searchParams.get('name') || 'default';
+      extName = (url.searchParams.get('name') || 'default').replace(/[\r\n\t]/g, '').slice(0, 64);
       ws.isAlive = true;
       log('INFO', `Extension connected: "${extName}"`);
 
@@ -320,7 +379,9 @@ function startServer() {
             p.resolve(data);
             log('INFO', `← Extension response id=${key}`);
           }
-        } catch {}
+        } catch (err) {
+          log('WARN', `WebSocket message processing error: ${err.message}`);
+        }
       });
 
       ws.on('close', () => {
@@ -334,7 +395,7 @@ function startServer() {
 
   function handleMCP(req, res) {
     if (req.method === 'GET') {
-      if (!checkAuth(req)) return unauthorized(res);
+      if (!checkAuthOrReject(req, res)) return;
       res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', 'Connection': 'keep-alive' });
       req.on('close', () => res.end());
       return;
@@ -346,7 +407,7 @@ function startServer() {
       return;
     }
 
-    if (!checkAuth(req)) return unauthorized(res);
+    if (!checkAuthOrReject(req, res)) return;
 
     readBody(req, (err, body) => {
       if (err) {
@@ -394,10 +455,17 @@ function startServer() {
       }
 
       // Forward to extension
+      if (pending.size >= MAX_PENDING) {
+        log('WARN', 'Too many pending requests, rejecting');
+        res.writeHead(503, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ jsonrpc: '2.0', id: msg.id, error: { code: -32000, message: 'Service overloaded' } }));
+        return;
+      }
+
       if (!extWs || extWs.readyState !== 1) {
         log('WARN', 'Extension not connected, rejecting request');
         res.writeHead(502, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ jsonrpc: '2.0', id: msg.id, error: { code: -32000, message: 'Extension not connected' } }));
+        res.end(JSON.stringify({ jsonrpc: '2.0', id: msg.id, error: { code: -32000, message: 'Backend unavailable' } }));
         return;
       }
 
@@ -417,7 +485,7 @@ function startServer() {
         pending.delete(reqID);
         log('ERROR', `Extension send failed id=${reqID}`);
         res.writeHead(502, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ jsonrpc: '2.0', id: msg.id, error: { code: -32000, message: 'Extension send failed' } }));
+        res.end(JSON.stringify({ jsonrpc: '2.0', id: msg.id, error: { code: -32000, message: 'Backend unavailable' } }));
         return;
       }
 
@@ -425,7 +493,7 @@ function startServer() {
         if (response === null) {
           log('WARN', `Extension timeout id=${reqID}`);
           res.writeHead(504, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ jsonrpc: '2.0', id: msg.id, error: { code: -32000, message: 'Extension timeout' } }));
+          res.end(JSON.stringify({ jsonrpc: '2.0', id: msg.id, error: { code: -32000, message: 'Request timeout' } }));
         } else {
           res.writeHead(200, { 'Content-Type': 'application/json' });
           res.end(response);
@@ -438,7 +506,7 @@ function startServer() {
 
   function handleHealth(req, res) {
     if (req.method === 'OPTIONS') { res.writeHead(200); res.end(); return; }
-    if (!checkAuth(req)) return unauthorized(res);
+    if (!checkAuthOrReject(req, res)) return;
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({
       status: 'ok',
@@ -450,13 +518,23 @@ function startServer() {
 
   // ── Helpers ──────────────────────────────────────────────
 
-  function checkAuth(req) {
-    return req.headers.authorization === `Bearer ${config.token}`;
-  }
-
-  function unauthorized(res) {
-    res.writeHead(401, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: 'Unauthorized' }));
+  function checkAuthOrReject(req, res) {
+    const ip = getClientIP(req);
+    if (isRateLimited(ip)) {
+      log('WARN', `Rate limited: ${ip}`);
+      res.writeHead(429, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Too many requests' }));
+      return false;
+    }
+    const ok = timingSafeEqual(req.headers.authorization || '', `Bearer ${config.token}`);
+    if (!ok) {
+      recordAuthFailure(ip);
+      log('WARN', `Auth failed from ${ip} ${req.method} ${req.url}`);
+      res.writeHead(401, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Unauthorized' }));
+      return false;
+    }
+    return true;
   }
 
   function readBody(req, cb) {
@@ -491,8 +569,8 @@ function startServer() {
 
   server.listen(config.port, '127.0.0.1', () => {
     log('INFO', `cgw_mcp started on http://localhost:${config.port} (PID ${process.pid})`);
-    log('INFO', `Agent token:     ${config.token}`);
-    log('INFO', `Extension token: ${config.extensionToken}`);
+    log('INFO', `Agent token:     ${config.token.slice(0, 4)}...${config.token.slice(-4)}`);
+    log('INFO', `Extension token: ${config.extensionToken.slice(0, 4)}...${config.extensionToken.slice(-4)}`);
     log('INFO', `Config: ${CONFIG_PATH}`);
     log('INFO', `Logs:   ${LOG_DIR}`);
   });
@@ -507,13 +585,28 @@ function loadOrCreateConfig() {
   } catch {}
 
   let changed = false;
-  if (!config.token) { config.token = crypto.randomBytes(16).toString('hex'); changed = true; }
-  if (!config.extensionToken) { config.extensionToken = crypto.randomBytes(16).toString('hex'); changed = true; }
-  if (!config.port) { config.port = 9877; changed = true; }
+  if (!config.token || typeof config.token !== 'string' || config.token.length < 16) {
+    config.token = crypto.randomBytes(16).toString('hex'); changed = true;
+  }
+  if (!config.extensionToken || typeof config.extensionToken !== 'string' || config.extensionToken.length < 16) {
+    config.extensionToken = crypto.randomBytes(16).toString('hex'); changed = true;
+  }
+  if (!Number.isInteger(config.port) || config.port < 1 || config.port > 65535) { config.port = 9877; changed = true; }
   if (!config.mcpInstructions) { config.mcpInstructions = DEFAULT_INSTRUCTIONS; changed = true; }
   if (changed) {
-    fs.mkdirSync(CONFIG_DIR, { recursive: true });
-    fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2));
+    fs.mkdirSync(CONFIG_DIR, { recursive: true, mode: 0o700 });
+    fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2), { mode: 0o600 });
   }
+
+  // Enforce permissions on existing config (Unix only)
+  if (process.platform !== 'win32') {
+    try {
+      const stat = fs.statSync(CONFIG_PATH);
+      if ((stat.mode & 0o777) !== 0o600) {
+        fs.chmodSync(CONFIG_PATH, 0o600);
+      }
+    } catch {}
+  }
+
   return config;
 }
