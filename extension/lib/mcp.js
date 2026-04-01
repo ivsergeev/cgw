@@ -99,6 +99,11 @@ function handleToolsList(id) {
       name: 'cgw_health',
       description: 'Check if CorpGateway extension is active.',
       inputSchema: { type: 'object', properties: {}, required: [] }
+    },
+    {
+      name: 'cgw_audit',
+      description: 'View recent skill invocation log (last 100 calls). Shows skill name, parameter names, errors, and timing.',
+      inputSchema: { type: 'object', properties: {}, required: [] }
     }
   ];
   return jsonRpcResult(id, { tools });
@@ -118,6 +123,7 @@ async function handleToolsCall(id, params) {
       case 'cgw_schema': text = await callSchema(args); break;
       case 'cgw_invoke': text = await callInvoke(args); break;
       case 'cgw_health': text = callHealth(); break;
+      case 'cgw_audit': text = await callAudit(); break;
       default: throw new Error(`Unknown tool: ${toolName}`);
     }
     return jsonRpcResult(id, {
@@ -188,12 +194,57 @@ async function callSchema(args) {
 async function callInvoke(args) {
   const skillName = args.skill;
   if (!skillName) throw new Error('Missing required parameter: skill');
-  const result = await invokeSkill(skillName, args.params || {});
+
+  const startTime = Date.now();
+  let error = null;
+  let result;
+  try {
+    result = await invokeSkill(skillName, args.params || {});
+  } catch (err) {
+    error = err.message;
+    throw err;
+  } finally {
+    await writeAuditEntry({
+      skill: skillName,
+      params: Object.keys(args.params || {}),
+      error,
+      durationMs: Date.now() - startTime,
+      ts: new Date().toISOString()
+    });
+  }
   return JSON.stringify(result);
+}
+
+// ── Audit log ───────────────────────────────────────────────
+// Stores last 100 invocations in chrome.storage.session (encrypted, cleared on restart)
+
+const AUDIT_KEY = 'cgw_audit';
+const AUDIT_MAX = 100;
+
+async function writeAuditEntry(entry) {
+  try {
+    const data = await chrome.storage.session.get(AUDIT_KEY);
+    const log = data[AUDIT_KEY] || [];
+    log.push(entry);
+    if (log.length > AUDIT_MAX) log.splice(0, log.length - AUDIT_MAX);
+    await chrome.storage.session.set({ [AUDIT_KEY]: log });
+  } catch {}
+}
+
+export async function getAuditLog() {
+  try {
+    const data = await chrome.storage.session.get(AUDIT_KEY);
+    return data[AUDIT_KEY] || [];
+  } catch { return []; }
 }
 
 function callHealth() {
   return JSON.stringify({ status: 'ok', runtime: 'extension' });
+}
+
+async function callAudit() {
+  const log = await getAuditLog();
+  return JSON.stringify({ entries: log, count: log.length });
 }
 
 // ── Helpers ─────────────────────────────────────────────────

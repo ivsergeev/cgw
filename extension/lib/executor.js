@@ -485,6 +485,19 @@ export async function invokeSkill(skillName, params = {}) {
 
     fetchOpts = buildFetchOpts(skill, url, origin, skillHeaders, body);
     result = await executeFetchInTab(tabId, url, fetchOpts);
+
+    // Still 401 after refresh — session expired, notify user
+    if (result.status === 401) {
+      try {
+        chrome.notifications.create(`cgw-auth-${origin}`, {
+          type: 'basic',
+          iconUrl: chrome.runtime.getURL('icons/icon128.png'),
+          title: 'CorpGateway — требуется авторизация',
+          message: `Сессия для ${origin} истекла. Залогиньтесь в браузере и повторите запрос.`,
+          priority: 2
+        });
+      } catch {}
+    }
   }
 
   // On fetch error — evict, create fresh session, retry (mirrors CDP error handling)
