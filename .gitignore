@@ -1,6 +1,5 @@
-# Build output
-bin/
-obj/
+# Dependencies
+node_modules/
 
 # IDE
 .vs/
@@ -9,14 +8,6 @@ obj/
 *.suo
 *.DotSettings.user
 
-# Publish
-publish/
-publish-*/
-
-# Installer output
-installer/publish/
-installer/output/
-
 # Claude Code
 .claude/
 
@@ -24,6 +15,3 @@ installer/output/
 Thumbs.db
 Desktop.ini
 .DS_Store
-
-# Runtime config (contains API tokens)
-**/AppData/

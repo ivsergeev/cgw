@@ -35,7 +35,7 @@ Chrome-расширение + MCP-сервер для подключения AI-
 |-----------|----------|-------------|
 | **Chrome Extension** | Управление скилами, выполнение запросов через браузерную сессию | `extension/` |
 | **cgw_mcp** | MCP-сервер (HTTP + WebSocket daemon), мост между агентом и расширением | `cgw_mcp/` |
-| **Presets** | Готовые наборы скилов для популярных систем | `../presets/` |
+| **Presets** | Готовые наборы скилов для популярных систем | `presets/` |
 
 ## Быстрый старт
 
@@ -349,7 +349,6 @@ WebSocket для расширения. Аутентификация через q
 ## Структура файлов
 
 ```
-corpgateway-extension/
 ├── extension/                  # Chrome Extension (Manifest V3)
 │   ├── manifest.json           # Permissions, service worker
 │   ├── background.js           # WS-подключение к cgw_mcp, auth capture
@@ -367,5 +366,13 @@ corpgateway-extension/
 │   ├── install.sh              # Установка демона (Linux/macOS)
 │   └── install.ps1             # Установка демона (Windows)
 │
-└── README.md                   # Этот файл
+├── presets/                    # Готовые наборы скилов
+│   ├── jira.json
+│   ├── confluence.json
+│   ├── gitlab.json
+│   ├── mattermost.json
+│   └── outlook.json
+│
+├── README.md
+└── SETUP.md                    # Руководство по установке
 ```
