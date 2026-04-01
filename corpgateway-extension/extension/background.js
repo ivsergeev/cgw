@@ -114,7 +114,7 @@ chrome.webRequest.onSendHeaders.addListener(
     }
   },
   { urls: ['https://*/*', 'http://*/*'] },
-  ['requestHeaders']
+  ['requestHeaders', 'extraHeaders']
 );
 
 // ── Message handler for popup/options ──────────────────────
