@@ -496,8 +496,8 @@ export async function invokeSkill(skillName, params = {}) {
         chrome.notifications.create(`cgw-auth-${origin}`, {
           type: 'basic',
           iconUrl: chrome.runtime.getURL('icons/icon128.png'),
-          title: 'CorpGateway — требуется авторизация',
-          message: `Сессия для ${origin} истекла. Залогиньтесь в браузере и повторите запрос.`,
+          title: chrome.i18n.getMessage('notifAuthTitle'),
+          message: chrome.i18n.getMessage('notifAuthMessage', [origin]),
           priority: 2
         });
       } catch {}

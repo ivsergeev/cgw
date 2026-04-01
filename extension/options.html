@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>CorpGateway — Настройки</title>
+  <title>CorpGateway — __MSG_optSettingsTitle__</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: -apple-system, 'Segoe UI', sans-serif; color: #1f2937; background: #f3f4f6; height: 100vh; overflow: hidden; }
@@ -117,14 +117,14 @@
       <h1>CorpGateway</h1>
       <div class="status">
         <div id="bridgeDot" class="dot off"></div>
-        <span id="bridgeStatus">MCP: connecting...</span>
+        <span id="bridgeStatus"></span>
       </div>
     </div>
     <div class="group-list" id="groupList"></div>
     <div class="sidebar-footer">
-      <button class="btn btn-ghost" style="width:100%;justify-content:center" id="addGroupBtn">+ Новая группа</button>
+      <button class="btn btn-ghost" style="width:100%;justify-content:center" id="addGroupBtn"></button>
       <div style="border-top:1px solid #e5e7eb;margin-top:4px;padding-top:8px">
-        <button class="btn btn-ghost btn-sm" style="width:100%;justify-content:flex-start" id="openSettingsBtn">⚙ Настройки</button>
+        <button class="btn btn-ghost btn-sm" style="width:100%;justify-content:flex-start" id="openSettingsBtn"></button>
       </div>
     </div>
   </div>
@@ -132,10 +132,10 @@
   <!-- ═══ CENTER ═══ -->
   <div class="center">
     <div class="toolbar">
-      <input type="text" id="searchInput" placeholder="Поиск скилов...">
-      <button class="btn btn-ghost btn-sm" id="exportBtn">Экспорт</button>
-      <button class="btn btn-ghost btn-sm" id="importBtn">Импорт</button>
-      <button class="btn btn-primary btn-sm" id="addSkillBtn">+ Скил</button>
+      <input type="text" id="searchInput">
+      <button class="btn btn-ghost btn-sm" id="exportBtn"></button>
+      <button class="btn btn-ghost btn-sm" id="importBtn"></button>
+      <button class="btn btn-primary btn-sm" id="addSkillBtn"></button>
       <input type="file" id="importFile" accept=".json" style="display:none">
     </div>
     <div class="skill-list" id="skillList"></div>
@@ -145,8 +145,8 @@
   <div class="panel" id="panel">
     <div class="empty-state" id="emptyState">
       <div>
-        <div style="font-size:16px;font-weight:600;margin-bottom:4px">Выберите скил</div>
-        <div style="font-size:13px;color:#d1d5db">или создайте новый</div>
+        <div style="font-size:16px;font-weight:600;margin-bottom:4px" id="panelEmptyTitle"></div>
+        <div style="font-size:13px;color:#d1d5db" id="panelEmptySub"></div>
       </div>
     </div>
     <div class="panel-content hidden" id="panelContent"></div>
@@ -159,8 +159,8 @@
   <div class="dialog">
     <p id="confirmMessage"></p>
     <div class="actions">
-      <button class="btn btn-danger" id="confirmYes">Удалить</button>
-      <button class="btn btn-ghost" id="confirmNo">Отмена</button>
+      <button class="btn btn-danger" id="confirmYes"></button>
+      <button class="btn btn-ghost" id="confirmNo"></button>
     </div>
   </div>
 </div>

@@ -1,8 +1,10 @@
 # CorpGateway Extension + MCP Server
 
-Chrome-расширение + MCP-сервер для подключения AI-агентов к корпоративным системам через браузерную сессию.
+[Русская версия](docs/README.ru.md)
 
-## Как это работает
+Chrome extension + MCP server for connecting AI agents to corporate systems via browser session.
+
+## How It Works
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
@@ -15,9 +17,9 @@ Chrome-расширение + MCP-сервер для подключения AI-
 │  │ cgw_mcp  │◄────────────────►│  Chrome Extension     │     │
 │  │ :9877    │                  │                       │     │
 │  │          │                  │  • chrome.cookies     │     │
-│  │ Токены:  │                  │  • chrome.webRequest  │     │
-│  │ • agent  │                  │  • fetch() с сессией  │     │
-│  │ • ext    │                  │  • Настройка скилов   │     │
+│  │ Tokens:  │                  │  • chrome.webRequest  │     │
+│  │ • agent  │                  │  • fetch() w/ session │     │
+│  │ • ext    │                  │  • Skill management   │     │
 │  └──────────┘                  └───────────┬───────────┘     │
 │                                            │                 │
 │                                            │ fetch() + cookies/auth
@@ -27,32 +29,32 @@ Chrome-расширение + MCP-сервер для подключения AI-
 └──────────────────────────────────────────────────────────────┘
 ```
 
-**Ключевое преимущество:** расширение использует существующую сессию браузера для авторизации. Не нужно хранить пароли, API-ключи или настраивать OAuth — если вы залогинены в корпоративной системе в Chrome, расширение автоматически использует эту сессию.
+**Key advantage:** the extension reuses your existing browser session for authorization. No need to store passwords, API keys, or configure OAuth — if you're logged into a corporate system in Chrome, the extension automatically uses that session.
 
-## Компоненты
+## Components
 
-| Компонент | Описание | Расположение |
-|-----------|----------|-------------|
-| **Chrome Extension** | Управление скилами, выполнение запросов через браузерную сессию | `extension/` |
-| **cgw_mcp** | MCP-сервер (HTTP + WebSocket daemon), мост между агентом и расширением | `cgw_mcp/` |
-| **Presets** | Готовые наборы скилов для популярных систем | `presets/` |
+| Component | Description | Location |
+|-----------|-------------|----------|
+| **Chrome Extension** | Skill management, request execution via browser session | `extension/` |
+| **cgw_mcp** | MCP server (HTTP + WebSocket daemon), bridge between agent and extension | `cgw_mcp/` |
+| **Presets** | Ready-made skill sets for popular systems | `presets/` |
 
-## Быстрый старт
+## Quick Start
 
-### 1. Установить расширение
+### 1. Install the extension
 
-1. Откройте `chrome://extensions`
-2. Включите **Developer mode**
-3. Нажмите **Load unpacked** → выберите папку `extension/`
+1. Open `chrome://extensions`
+2. Enable **Developer mode**
+3. Click **Load unpacked** → select the `extension/` folder
 
-### 2. Установить и запустить cgw_mcp
+### 2. Install and run cgw_mcp
 
 ```bash
 cd cgw_mcp
 npm install
 ```
 
-**Как демон (автозапуск):**
+**As a daemon (autostart):**
 
 ```bash
 # Linux / macOS
@@ -62,13 +64,13 @@ npm install
 .\install.ps1
 ```
 
-**Вручную:**
+**Manually:**
 
 ```bash
 node index.js
 ```
 
-При первом запуске создаётся конфиг `~/.corpgateway/cgw_mcp.json`:
+On first run, a config file is created at `~/.corpgateway/cgw_mcp.json`:
 
 ```json
 {
@@ -79,26 +81,26 @@ node index.js
 }
 ```
 
-### 3. Подключить расширение к cgw_mcp
+### 3. Connect the extension to cgw_mcp
 
-1. Иконка расширения → **⚙ Настройки**
-2. В разделе **Подключение к MCP**:
-   - **Имя экземпляра:** любое (напр. «Chrome Рабочий»)
-   - **URL сервера MCP:** `http://localhost:9877`
-   - **Токен расширения:** скопируйте `extensionToken` из `~/.corpgateway/cgw_mcp.json`
-3. Нажмите **Сохранить**
-4. В popup расширения нажмите **⚡ Подключить**
-5. Иконка расширения станет цветной — соединение установлено
+1. Extension icon → **⚙ Settings**
+2. In the **MCP Connection** section:
+   - **Instance name:** anything (e.g. "Chrome Work")
+   - **MCP server URL:** `http://localhost:9877`
+   - **Extension token:** copy `extensionToken` from `~/.corpgateway/cgw_mcp.json`
+3. Click **Save**
+4. In the extension popup, click **⚡ Connect**
+5. The extension icon turns colored — connection established
 
-### 4. Импортировать скилы
+### 4. Import skills
 
-1. Настройки расширения → **Импорт**
-2. Выберите файл из `presets/` (напр. `jira.json`)
-3. Замените URL-заглушки на реальные адреса ваших систем
+1. Extension settings → **Import**
+2. Select a file from `presets/` (e.g. `jira.json`)
+3. Replace URL placeholders with your actual system addresses
 
-### 5. Подключить AI-агента
+### 5. Connect the AI agent
 
-Добавьте в конфиг агента (`opencode.json`, `.cursor/mcp.json` и т.д.):
+Add to your agent config (`opencode.json`, `.cursor/mcp.json`, etc.):
 
 ```json
 {
@@ -107,7 +109,7 @@ node index.js
       "type": "remote",
       "url": "http://localhost:9877/mcp",
       "headers": {
-        "Authorization": "Bearer <token из cgw_mcp.json>"
+        "Authorization": "Bearer <token from cgw_mcp.json>"
       }
     }
   }
@@ -116,181 +118,168 @@ node index.js
 
 ## MCP Tools
 
-Агент получает 6 мета-инструментов:
+The agent receives 6 meta-tools:
 
-| Tool | Описание | Параметры |
-|------|----------|-----------|
-| `cgw_groups` | Список доступных групп | — |
-| `cgw_list` | Список скилов (все или по группе) | `group?` |
-| `cgw_schema` | Параметры конкретного скила | `skill` |
-| `cgw_invoke` | Вызов скила | `skill`, `params?` |
-| `cgw_health` | Статус сервера и расширения | — |
-| `cgw_audit` | Журнал последних 100 вызовов скилов | — |
+| Tool | Description | Parameters |
+|------|-------------|------------|
+| `cgw_groups` | List available groups | — |
+| `cgw_list` | List skills (all or by group) | `group?` |
+| `cgw_schema` | Get parameter details for a skill | `skill` |
+| `cgw_invoke` | Invoke a skill | `skill`, `params?` |
+| `cgw_health` | Check server and extension status | — |
+| `cgw_audit` | View last 100 skill invocation log | — |
 
-### Workflow агента
+### Agent workflow
 
 ```
-1. cgw_groups          → видит группы (Jira, Mattermost, ...)
-2. cgw_list(group=jira) → видит скилы группы
-3. cgw_schema(skill=jira_issue) → видит параметры
-4. cgw_invoke(skill=jira_issue, params={key:"PROJ-1"}) → результат
+1. cgw_groups              → sees groups (Jira, Mattermost, ...)
+2. cgw_list(group=jira)    → sees skills in group
+3. cgw_schema(skill=jira_issue) → sees parameters
+4. cgw_invoke(skill=jira_issue, params={key:"PROJ-1"}) → result
 ```
 
-## Настройка скилов
+## Skill Configuration
 
-### Через UI расширения
+### Via extension UI
 
-Настройки расширения (`chrome://extensions` → CorpGateway → Details → Extension options):
+Extension settings (`chrome://extensions` → CorpGateway → Details → Extension options):
 
-- **Sidebar:** группы с переключением активности
-- **Центр:** список скилов с поиском, бейджами методов
-- **Правая панель:** редактирование скила, тест, настройки
+- **Sidebar:** groups with enable/disable toggles
+- **Center:** skill list with search, method badges
+- **Right panel:** skill editor, test, settings
 
-### Структура скила
+### Skill structure
 
-| Поле | Описание |
-|------|----------|
-| Название | Имя функции для агента (напр. `jira_issue`) |
-| Описание | Что делает скил (видно агенту) |
-| URL | Адрес API с path-параметрами `{id}` |
-| HTTP метод | GET, POST, PUT, PATCH, DELETE |
-| Origin URL | Откуда выполнять запрос (если отличается от URL) |
-| Body Template | JSON-шаблон тела с `{{param}}` плейсхолдерами |
-| Response Filter | Dot-notation пути для фильтрации ответа |
-| HTTP заголовки | Кастомные заголовки (поддерживают `{{param}}`) |
-| Параметры | Имя, тип (String/Integer/Float/Boolean/Date), обязательность, описание |
+| Field | Description |
+|-------|-------------|
+| Name | Function name for the agent (e.g. `jira_issue`) |
+| Description | What the skill does (visible to agent) |
+| URL | API endpoint with path parameters `{id}` |
+| HTTP method | GET, POST, PUT, PATCH, DELETE |
+| Origin URL | Where to execute the request from (if different from URL) |
+| Body Template | JSON body template with `{{param}}` placeholders |
+| Response Filter | Dot-notation paths for response filtering |
+| HTTP headers | Custom headers (support `{{param}}`) |
+| Parameters | Name, type (String/Integer/Float/Boolean/Date), required, description |
 
-### Подстановка параметров
+### Parameter substitution
 
-| Место | Формат | Пример |
-|-------|--------|--------|
+| Location | Format | Example |
+|----------|--------|---------|
 | URL path | `{param}` | `/api/issues/{key}` → `/api/issues/PROJ-1` |
 | Body | `{{param}}` | `{"text":"{{msg}}"}` → `{"text":"Hello"}` |
 | Headers | `{{param}}` | `X-Data: {{token}}` → `X-Data: abc123` |
-| Query string | автоматически | GET + remaining params → `?q=test&limit=10` |
+| Query string | automatic | GET + remaining params → `?q=test&limit=10` |
 
-### Группы
+### Groups
 
-Скилы организованы в группы. Каждая группа может быть включена/выключена — отключённые группы и их скилы не видны агенту.
+Skills are organized into groups. Each group can be enabled/disabled — disabled groups and their skills are hidden from the agent.
 
-Описание группы используется как заголовок в `cgw_list`:
+### Presets
 
-```
-# Available skills
+Ready-made skill sets in `presets/`:
 
-## Jira — управление задачами
-jira_issue(key:str)  // Детали задачи
-jira_search(jql:str)  // Поиск по JQL
-
-## Mattermost — корпоративный мессенджер
-mm_channel_posts(channel_id:str)  // Сообщения канала
-```
-
-### Пресеты
-
-Готовые наборы скилов в `presets/`:
-
-| Файл | Система | Скилы |
-|------|---------|-------|
+| File | System | Skills |
+|------|--------|--------|
 | `jira.json` | Jira REST API | issue, search, comments, transitions |
 | `confluence.json` | Confluence REST API | pages, search, spaces |
 | `gitlab.json` | GitLab API | projects, issues, merge requests |
 | `mattermost.json` | Mattermost API | channels, posts, users, search |
 | `outlook.json` | Microsoft Graph API | mail, calendar, contacts |
 
-После импорта замените URL-заглушки (`JIRA_URL`, `MATTERMOST_URL` и т.д.) на реальные адреса.
+After import, replace URL placeholders (`JIRA_URL`, `MATTERMOST_URL`, etc.) with actual addresses.
 
-## Авторизация
+## Authorization
 
-### Как расширение получает доступ к API
+### How the extension accesses APIs
 
-1. **Cookies:** `chrome.cookies` API — расширение имеет доступ к cookies всех разрешённых доменов
-2. **Authorization headers:** `chrome.webRequest.onSendHeaders` — перехватывает Authorization из всех запросов браузера (Bearer токены, JWT)
-3. **Fetch с credentials:** запросы выполняются из Service Worker расширения с `credentials: 'include'`
+1. **Cookies:** `chrome.cookies` API — the extension has access to cookies for all permitted domains
+2. **Authorization headers:** `chrome.webRequest.onSendHeaders` — intercepts Authorization from all browser requests (Bearer tokens, JWT)
+3. **Fetch with credentials:** requests are executed from the extension's Service Worker with `credentials: 'include'`
 
-**Вам не нужно вводить пароли или API-ключи.** Если вы залогинены в корпоративной системе в Chrome — расширение автоматически использует эту сессию.
+**You don't need to enter passwords or API keys.** If you're logged into a corporate system in Chrome — the extension automatically uses that session.
 
-### Безопасность
+### Security
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│  Уровень 1: HTTP API (cgw_mcp)                         │
-│  • Bearer token на каждый запрос от агента              │
-│  • Timing-safe сравнение токенов                        │
-│  • Rate limiting: 10 попыток/мин по IP                  │
-│  • localhost only — не доступен из сети                 │
-│  • CORS ограничен localhost                             │
-│  • Whitelist JSON-RPC методов                           │
-│  • Лимит размера сообщений (1 МБ)                      │
+│  Layer 1: HTTP API (cgw_mcp)                            │
+│  • Bearer token on every agent request                  │
+│  • Timing-safe token comparison                         │
+│  • Rate limiting: 10 attempts/min per IP                │
+│  • localhost only — not accessible from network         │
+│  • CORS restricted to localhost                         │
+│  • JSON-RPC method whitelist                            │
+│  • Message size limit (1 MB)                            │
 │                                                         │
-│  Уровень 2: WebSocket (cgw_mcp ↔ расширение)           │
-│  • Extension token для аутентификации                   │
+│  Layer 2: WebSocket (cgw_mcp ↔ extension)               │
+│  • Extension token for authentication                   │
 │  • Mutual auth: HMAC challenge-response                 │
-│  • Обе стороны доказывают знание extensionToken         │
+│  • Both sides prove knowledge of extensionToken         │
 │                                                         │
-│  Уровень 3: Chrome Extension                            │
-│  • Sender validation — web-страницы не могут слать      │
-│    команды расширению                                   │
-│  • SSRF-защита: блокировка приватных IP, только http(s) │
-│  • Валидация шаблонов: защита от injection в JSON/HTTP  │
-│  • Подключение к MCP — только по кнопке пользователя   │
-│  • Уведомления при истечении сессии авторизации         │
+│  Layer 3: Chrome Extension                              │
+│  • Sender validation — web pages cannot send            │
+│    commands to the extension                            │
+│  • SSRF protection: private IP blocking, http(s) only   │
+│  • Template validation: JSON/HTTP injection protection  │
+│  • MCP connection — only via user button click          │
+│  • Notifications on auth session expiry                 │
 │                                                         │
-│  Уровень 4: Данные                                      │
-│  • Credentials не хранятся — используется сессия Chrome │
-│  • Токены в cgw_mcp.json с правами 0600                │
-│  • Скилы в chrome.storage.local (зашифровано Chrome)    │
-│  • Audit log: последние 100 вызовов в session storage   │
-│  • Токены маскируются в логах                           │
+│  Layer 4: Data                                          │
+│  • Credentials not stored — uses Chrome session         │
+│  • Tokens in cgw_mcp.json with 0600 permissions         │
+│  • Skills in chrome.storage.local (encrypted by Chrome) │
+│  • Audit log: last 100 invocations in session storage   │
+│  • Tokens masked in logs                                │
 └─────────────────────────────────────────────────────────┘
 ```
 
-## Конфигурация
+## Configuration
 
 ### cgw_mcp.json
 
-Расположение: `~/.corpgateway/cgw_mcp.json`
+Location: `~/.corpgateway/cgw_mcp.json`
 
 ```json
 {
   "port": 9877,
   "token": "agent-token",
   "extensionToken": "extension-ws-token",
-  "mcpInstructions": "Инструкция для агента..."
+  "mcpInstructions": "Instructions for the agent..."
 }
 ```
 
-| Поле | Описание |
-|------|----------|
-| `port` | HTTP порт cgw_mcp (по умолчанию 9877) |
-| `token` | Bearer токен для агента |
-| `extensionToken` | Токен для WebSocket-подключения расширения |
-| `mcpInstructions` | Текст инструкции, передаваемый агенту при MCP initialize |
+| Field | Description |
+|-------|-------------|
+| `port` | HTTP port for cgw_mcp (default 9877) |
+| `token` | Bearer token for the agent |
+| `extensionToken` | Token for WebSocket connection from extension |
+| `mcpInstructions` | Instruction text sent to agent on MCP initialize |
 
-### Расширение (Settings)
+### Extension (Settings)
 
-| Поле | Описание |
-|------|----------|
-| Имя экземпляра | Идентификация при нескольких браузерах |
-| URL сервера MCP | HTTP-адрес cgw_mcp |
-| Токен расширения | `extensionToken` из cgw_mcp.json |
+| Field | Description |
+|-------|-------------|
+| Instance name | Identification when using multiple browsers |
+| MCP server URL | HTTP address of cgw_mcp |
+| Extension token | `extensionToken` from cgw_mcp.json |
 
-## Управление cgw_mcp
+## Managing cgw_mcp
 
-### Установка как демон
+### Install as daemon
 
 **Windows:**
 ```powershell
 cd cgw_mcp
-.\install.ps1              # установить (Task Scheduler)
-.\install.ps1 -Uninstall   # удалить
+.\install.ps1              # install (Task Scheduler)
+.\install.ps1 -Uninstall   # remove
 ```
 
 **Linux:**
 ```bash
 cd cgw_mcp
-./install.sh               # установить (systemd user service)
-./install.sh uninstall      # удалить
+./install.sh               # install (systemd user service)
+./install.sh uninstall      # remove
 
 systemctl --user status cgw-mcp
 systemctl --user restart cgw-mcp
@@ -300,42 +289,34 @@ journalctl --user -u cgw-mcp -f
 **macOS:**
 ```bash
 cd cgw_mcp
-./install.sh               # установить (LaunchAgent)
-./install.sh uninstall      # удалить
+./install.sh               # install (LaunchAgent)
+./install.sh uninstall      # remove
 
 launchctl list | grep cgw-mcp
 tail -f ~/.corpgateway/logs/cgw_mcp_launchd.log
 ```
 
-### Логи
+### Logs
 
-Расположение: `~/.corpgateway/logs/`
+Location: `~/.corpgateway/logs/`
 
-```
-cgw_mcp_2026-04-01.log
-cgw_mcp_2026-03-31.log
-...
-```
-
-Ротация: хранятся последние 7 дней. Формат:
+Rotation: last 7 days are kept. Format:
 
 ```
 [2026-04-01T10:30:15.123Z] INFO cgw_mcp started on http://localhost:9877
-[2026-04-01T10:30:20.456Z] INFO Extension connected: "Chrome Рабочий"
+[2026-04-01T10:30:20.456Z] INFO Extension connected: "Chrome Work"
 [2026-04-01T10:31:05.789Z] INFO → Agent request id=1 method=tools/call
-[2026-04-01T10:31:06.012Z] INFO → Forwarded to extension id=1
-[2026-04-01T10:31:06.234Z] INFO ← Extension response id=1
 ```
 
 ## API Reference
 
 ### POST /mcp
 
-MCP JSON-RPC endpoint (Streamable HTTP). Требует `Authorization: Bearer <token>`.
+MCP JSON-RPC endpoint (Streamable HTTP). Requires `Authorization: Bearer <token>`.
 
 ### GET /mcp
 
-SSE keep-alive (MCP spec). Требует `Authorization: Bearer <token>`.
+SSE keep-alive (MCP spec). Requires `Authorization: Bearer <token>`.
 
 ### GET /health
 
@@ -343,54 +324,59 @@ SSE keep-alive (MCP spec). Требует `Authorization: Bearer <token>`.
 {
   "status": "ok",
   "extension": true,
-  "extensionName": "Chrome Рабочий"
+  "extensionName": "Chrome Work"
 }
 ```
 
 ### WS /extension/ws
 
-WebSocket для расширения. Двухэтапная аутентификация:
+WebSocket for the extension. Two-stage authentication:
 
-1. Подключение с `?token=<extensionToken>&name=<instanceName>`
-2. Mutual auth (HMAC challenge-response) — обе стороны доказывают знание `extensionToken`
+1. Connect with `?token=<extensionToken>&name=<instanceName>`
+2. Mutual auth (HMAC challenge-response) — both sides prove knowledge of `extensionToken`
 
-## Несколько браузеров
+## Multiple Browsers
 
-Если расширение установлено в нескольких профилях Chrome:
+If the extension is installed in multiple Chrome profiles:
 
-1. Каждый профиль имеет свой экземпляр расширения со своими скилами
-2. Только один может быть подключён к cgw_mcp одновременно
-3. Последний подключившийся вытесняет предыдущего
-4. В `GET /health` видно имя подключённого экземпляра
-5. Задайте разные **Имена экземпляров** в настройках для идентификации
+1. Each profile has its own extension instance with its own skills
+2. Only one can be connected to cgw_mcp at a time
+3. The last one to connect displaces the previous
+4. `GET /health` shows the name of the connected instance
+5. Set different **Instance names** in settings for identification
 
-## Структура файлов
+## File Structure
 
 ```
 ├── extension/                  # Chrome Extension (Manifest V3)
 │   ├── manifest.json           # Permissions, service worker
-│   ├── background.js           # WS-подключение к cgw_mcp, auth capture
-│   ├── popup.html/js           # Кнопка подключения, группы
-│   ├── options.html/js         # Полная настройка скилов (3-column UI)
+│   ├── background.js           # WS connection to cgw_mcp, auth capture
+│   ├── popup.html/js           # Connect button, groups
+│   ├── options.html/js         # Full skill editor (3-column UI)
 │   ├── lib/
-│   │   ├── storage.js          # CRUD skills/groups в chrome.storage
-│   │   ├── executor.js         # Выполнение скилов (fetch + подстановка)
+│   │   ├── storage.js          # CRUD skills/groups in chrome.storage
+│   │   ├── executor.js         # Skill execution (fetch + substitution)
 │   │   └── mcp.js              # MCP JSON-RPC handler (6 meta-tools)
-│   └── icons/                  # Цветные + серые иконки
+│   ├── _locales/               # i18n (en, ru)
+│   └── icons/                  # Colored + gray icons
 │
 ├── cgw_mcp/                    # MCP Server (Node.js)
-│   ├── index.js                # HTTP + WebSocket сервер
+│   ├── index.js                # HTTP + WebSocket server
 │   ├── package.json
-│   ├── install.sh              # Установка демона (Linux/macOS)
-│   └── install.ps1             # Установка демона (Windows)
+│   ├── install.sh              # Daemon installer (Linux/macOS)
+│   └── install.ps1             # Daemon installer (Windows)
 │
-├── presets/                    # Готовые наборы скилов
+├── presets/                    # Ready-made skill sets
 │   ├── jira.json
 │   ├── confluence.json
 │   ├── gitlab.json
 │   ├── mattermost.json
 │   └── outlook.json
 │
-├── README.md
-└── SETUP.md                    # Руководство по установке
+├── docs/                       # Documentation translations
+│   ├── README.ru.md
+│   └── SETUP.ru.md
+│
+├── README.md                   # This file
+└── SETUP.md                    # Installation guide
 ```

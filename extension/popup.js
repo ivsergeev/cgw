@@ -1,5 +1,12 @@
 import { getGroups, getSkills, updateGroup } from './lib/storage.js';
 
+const t = chrome.i18n.getMessage.bind(chrome.i18n);
+
+// ── Init labels ───────────────────────────────────────────
+
+document.getElementById('groupsLabel').textContent = t('popupGroups');
+document.getElementById('openOptions').textContent = t('popupSettings');
+
 // ── Status ─────────────────────────────────────────────────
 
 function updateStatus() {
@@ -10,21 +17,21 @@ function updateStatus() {
     if (status?.connected) {
       btn.className = 'connect-btn active';
       btn.textContent = '⚡';
-      btn.title = 'Отключить';
+      btn.title = t('popupDisconnect');
       const name = status.instanceName ? ` (${status.instanceName})` : '';
-      label.textContent = `Подключён${name}`;
+      label.textContent = t('popupConnected') + name;
       label.className = 'status-label on';
     } else if (status?.autoReconnect) {
       btn.className = 'connect-btn';
       btn.textContent = '...';
-      btn.title = 'Переподключение';
-      label.textContent = 'Переподключение...';
+      btn.title = t('popupReconnecting');
+      label.textContent = t('popupReconnecting');
       label.className = 'status-label';
     } else {
       btn.className = 'connect-btn';
       btn.textContent = '⚡';
-      btn.title = 'Подключить';
-      label.textContent = 'Не подключён';
+      btn.title = t('popupConnect');
+      label.textContent = t('popupDisconnected');
       label.className = 'status-label';
     }
   });
@@ -55,7 +62,7 @@ async function loadGroups() {
   container.innerHTML = '';
 
   if (groups.length === 0) {
-    container.innerHTML = '<div class="empty">Нет групп. Откройте настройки.</div>';
+    container.innerHTML = `<div class="empty">${esc(t('popupNoGroups'))}</div>`;
     return;
   }
 

@@ -1,97 +1,99 @@
-# CorpGateway — Руководство по установке и настройке
+# CorpGateway — Installation and Setup Guide
 
-Пошаговая инструкция: от чистого профиля Chrome до работающего AI-агента с доступом к корпоративным системам.
+[Русская версия](docs/SETUP.ru.md)
 
----
-
-## Содержание
-
-1. [Создание отдельного профиля Chrome](#1-создание-отдельного-профиля-chrome)
-2. [Установка расширения](#2-установка-расширения)
-3. [Установка и запуск cgw_mcp сервера](#3-установка-и-запуск-cgw_mcp-сервера)
-4. [Настройка расширения](#4-настройка-расширения)
-5. [Импорт скилов](#5-импорт-скилов)
-6. [Подключение к OpenCode](#6-подключение-к-opencode)
-7. [Проверка работы](#7-проверка-работы)
-8. [Устранение неполадок](#8-устранение-неполадок)
+Step-by-step instructions: from a clean Chrome profile to a working AI agent with access to corporate systems.
 
 ---
 
-## 1. Создание отдельного профиля Chrome
+## Contents
 
-Рекомендуется использовать отдельный профиль Chrome для работы с CorpGateway. Это позволяет:
-- Не мешать основному браузеру
-- Держать корпоративные сессии изолированно
-- Легко переключаться между профилями
+1. [Create a dedicated Chrome profile](#1-create-a-dedicated-chrome-profile)
+2. [Install the extension](#2-install-the-extension)
+3. [Install and run cgw_mcp server](#3-install-and-run-cgw_mcp-server)
+4. [Configure the extension](#4-configure-the-extension)
+5. [Import skills](#5-import-skills)
+6. [Connect to OpenCode](#6-connect-to-opencode)
+7. [Verify everything works](#7-verify-everything-works)
+8. [Troubleshooting](#8-troubleshooting)
 
-### Шаги
+---
 
-1. Откройте Chrome
-2. Нажмите на **иконку профиля** (правый верхний угол, рядом с тремя точками)
-3. Нажмите **Добавить** (или **Add**)
-4. Выберите **Продолжить без аккаунта** (или привяжите Google-аккаунт)
-5. Введите имя профиля, например **«CorpGateway»**
-6. Выберите цвет или иконку для визуального отличия
-7. Нажмите **Готово**
+## 1. Create a dedicated Chrome profile
 
-Откроется новое окно Chrome с чистым профилем.
+It's recommended to use a separate Chrome profile for CorpGateway. This allows you to:
+- Keep your main browser unaffected
+- Isolate corporate sessions
+- Easily switch between profiles
 
-### Авторизация в корпоративных системах
+### Steps
 
-В этом профиле залогиньтесь во все корпоративные системы, к которым нужен доступ:
+1. Open Chrome
+2. Click the **profile icon** (top-right corner, next to the three dots)
+3. Click **Add**
+4. Choose **Continue without an account** (or link a Google account)
+5. Enter a profile name, e.g. **"CorpGateway"**
+6. Pick a color or icon for visual distinction
+7. Click **Done**
+
+A new Chrome window will open with a clean profile.
+
+### Log in to corporate systems
+
+In this profile, log in to all corporate systems you need access to:
 - Jira
 - Confluence
 - GitLab
 - Mattermost
 - Outlook / Microsoft 365
-- Другие внутренние сервисы
+- Other internal services
 
-> **Важно:** расширение использует существующую сессию браузера. Если вы не залогинены в системе — скилы для неё не смогут авторизоваться.
+> **Important:** the extension uses your existing browser session. If you're not logged into a system — skills for it won't be able to authenticate.
 
 ---
 
-## 2. Установка расширения
+## 2. Install the extension
 
-### Требования
+### Requirements
 
 - Chrome 116+ (Manifest V3)
 
-### Шаги
+### Steps
 
-1. В адресной строке введите `chrome://extensions` и нажмите Enter
-2. Включите **Developer mode** (переключатель в правом верхнем углу)
-3. Нажмите **Load unpacked**
-4. Выберите папку `extension/`
-5. Расширение появится в списке — убедитесь, что оно включено
+1. Navigate to `chrome://extensions`
+2. Enable **Developer mode** (toggle in the top-right corner)
+3. Click **Load unpacked**
+4. Select the `extension/` folder
+5. The extension will appear in the list — make sure it's enabled
 
-В панели расширений (справа от адресной строки) появится иконка CorpGateway. Если иконка серая — расширение загружено, но ещё не подключено к серверу.
+The CorpGateway icon will appear in the extensions bar (right of the address bar). If the icon is gray — the extension is loaded but not yet connected to the server.
 
-> **Совет:** закрепите расширение в панели — нажмите на иконку пазла (Extensions) → найдите CorpGateway → нажмите на булавку.
+> **Tip:** pin the extension — click the puzzle icon (Extensions) → find CorpGateway → click the pin.
 
 ---
 
-## 3. Установка и запуск cgw_mcp сервера
+## 3. Install and run cgw_mcp server
 
-cgw_mcp — это локальный MCP-сервер, который связывает AI-агента с расширением через WebSocket.
+cgw_mcp is a local MCP server that connects the AI agent to the extension via WebSocket.
 
-### Требования
+### Requirements
 
 - Node.js 18+
 
-### Установка зависимостей
+### Install dependencies
 
 ```bash
 cd cgw_mcp
 npm install
 ```
 
-### Первый запуск
+### First run
 
 ```bash
 node index.js --foreground
 ```
 
-При первом запуске автоматически создаётся конфигурация:
+On first run, a configuration file is automatically created:
 
 ```
 ~/.corpgateway/cgw_mcp.json
@@ -106,27 +108,27 @@ node index.js --foreground
 }
 ```
 
-| Поле | Описание |
-|------|----------|
-| `port` | Порт сервера (по умолчанию 9877) |
-| `token` | Токен для AI-агента (Bearer авторизация) |
-| `extensionToken` | Токен для WebSocket-подключения расширения |
-| `mcpInstructions` | Системная инструкция для агента |
+| Field | Description |
+|-------|-------------|
+| `port` | Server port (default 9877) |
+| `token` | Token for the AI agent (Bearer auth) |
+| `extensionToken` | Token for WebSocket connection from extension |
+| `mcpInstructions` | System instruction for the agent |
 
-> **Запишите значения `token` и `extensionToken`** — они понадобятся на следующих шагах.
+> **Note the `token` and `extensionToken` values** — you'll need them in the next steps.
 
-Остановите сервер (Ctrl+C) и перезапустите как демон:
+Stop the server (Ctrl+C) and restart as a daemon:
 
-### Запуск как демон (фоновый процесс)
+### Run as daemon (background process)
 
-**Windows (PowerShell от имени текущего пользователя):**
+**Windows (PowerShell):**
 
 ```powershell
 cd cgw_mcp
 .\install.ps1
 ```
 
-Создаёт задачу в Task Scheduler, которая запускает cgw_mcp при входе в систему.
+Creates a Task Scheduler task that starts cgw_mcp at logon.
 
 **Linux (systemd):**
 
@@ -142,16 +144,16 @@ cd cgw_mcp
 ./install.sh
 ```
 
-### Управление демоном
+### Daemon management
 
 ```bash
-node index.js status    # проверить статус
-node index.js stop      # остановить
-node index.js start     # запустить
-node index.js restart   # перезапустить
+node index.js status    # check status
+node index.js stop      # stop
+node index.js start     # start
+node index.js restart   # restart
 ```
 
-### Удаление демона
+### Remove daemon
 
 ```powershell
 # Windows
@@ -165,71 +167,71 @@ node index.js restart   # перезапустить
 
 ---
 
-## 4. Настройка расширения
+## 4. Configure the extension
 
-### Открыть настройки
+### Open settings
 
-Нажмите на иконку расширения → **⚙ Настройки** (внизу popup-окна).
+Click the extension icon → **⚙ Settings** (at the bottom of the popup).
 
-Или: `chrome://extensions` → CorpGateway → **Details** → **Extension options**
+Or: `chrome://extensions` → CorpGateway → **Details** → **Extension options**
 
-### Заполнить подключение к MCP
+### Fill in MCP connection
 
-В верхней части страницы настроек, в секции **«Подключение к MCP»**:
+In the settings page, under **"MCP Connection"**:
 
-| Поле | Что вводить |
-|------|------------|
-| **Имя экземпляра** | Любое понятное имя, например `Chrome Work` |
-| **URL сервера MCP** | `http://localhost:9877` |
-| **Токен расширения** | Значение `extensionToken` из `~/.corpgateway/cgw_mcp.json` |
+| Field | Value |
+|-------|-------|
+| **Instance name** | Any descriptive name, e.g. `Chrome Work` |
+| **MCP server URL** | `http://localhost:9877` |
+| **Extension token** | `extensionToken` value from `~/.corpgateway/cgw_mcp.json` |
 
-Нажмите **Сохранить**.
+Click **Save**.
 
-### Подключиться
+### Connect
 
-1. Нажмите на иконку расширения в панели Chrome
-2. Нажмите большую кнопку **⚡** (Connect)
-3. Статус изменится на **«Подключён»** (зелёный)
-4. Иконка расширения станет цветной
-5. Вокруг страницы появится фиолетовая рамка — индикатор активного соединения
+1. Click the extension icon in the Chrome toolbar
+2. Click the big **⚡** button (Connect)
+3. Status changes to **"Connected"** (green)
+4. The extension icon turns colored
+5. A purple border appears around the page — active connection indicator
 
-> Если подключение не устанавливается — убедитесь, что cgw_mcp сервер запущен (`node index.js status`).
+> If the connection doesn't establish — make sure cgw_mcp server is running (`node index.js status`).
 
 ---
 
-## 5. Импорт скилов
+## 5. Import skills
 
-Скилы определяют, какие API доступны AI-агенту. Можно создать вручную или импортировать готовые пресеты.
+Skills define which APIs are available to the AI agent. You can create them manually or import ready-made presets.
 
-### Импорт пресетов
+### Import presets
 
-1. В настройках расширения нажмите **Импорт** (иконка в верхней панели)
-2. Выберите файл из папки `presets/`:
+1. In extension settings, click **Import** (icon in the top toolbar)
+2. Select a file from the `presets/` folder:
 
-| Файл | Система |
-|------|---------|
+| File | System |
+|------|--------|
 | `jira.json` | Jira REST API |
 | `confluence.json` | Confluence REST API |
 | `gitlab.json` | GitLab API |
 | `mattermost.json` | Mattermost API |
 | `outlook.json` | Microsoft Graph API |
 
-3. После импорта **замените URL-заглушки** на реальные адреса ваших систем:
-   - Откройте импортированную группу
-   - В каждом скиле замените `JIRA_URL`, `MATTERMOST_URL` и т.д. на реальные домены
-   - Например: `https://JIRA_URL/rest/api/2/issue/{key}` → `https://jira.mycompany.com/rest/api/2/issue/{key}`
+3. After import, **replace URL placeholders** with your actual system addresses:
+   - Open the imported group
+   - In each skill, replace `JIRA_URL`, `MATTERMOST_URL`, etc. with real domains
+   - For example: `https://JIRA_URL/rest/api/2/issue/{key}` → `https://jira.mycompany.com/rest/api/2/issue/{key}`
 
-### Включение/выключение групп
+### Enable/disable groups
 
-В popup расширения или в sidebar настроек каждая группа имеет переключатель. Отключённые группы и их скилы не видны AI-агенту.
+In the extension popup or settings sidebar, each group has a toggle. Disabled groups and their skills are hidden from the AI agent.
 
 ---
 
-## 6. Подключение к OpenCode
+## 6. Connect to OpenCode
 
-### Конфигурация
+### Configuration
 
-Создайте или отредактируйте файл `opencode.json` в корне вашего проекта:
+Create or edit `opencode.json` in your project root:
 
 ```json
 {
@@ -245,13 +247,13 @@ node index.js restart   # перезапустить
 }
 ```
 
-Замените `<TOKEN>` на значение `token` из `~/.corpgateway/cgw_mcp.json`.
+Replace `<TOKEN>` with the `token` value from `~/.corpgateway/cgw_mcp.json`.
 
-> **Внимание:** `token` — это токен для агента (не `extensionToken`). Это разные токены.
+> **Note:** `token` is the agent token (not `extensionToken`). These are different tokens.
 
-### Альтернатива: глобальная конфигурация
+### Alternative: global configuration
 
-Чтобы CorpGateway был доступен во всех проектах, добавьте его в глобальный конфиг:
+To make CorpGateway available in all projects, add it to the global config:
 
 ```
 ~/.config/opencode/opencode.json
@@ -271,83 +273,83 @@ node index.js restart   # перезапустить
 }
 ```
 
-### Запуск OpenCode
+### Launch OpenCode
 
 ```bash
 opencode
 ```
 
-При старте OpenCode автоматически подключится к cgw_mcp и получит список доступных инструментов: `cgw_groups`, `cgw_list`, `cgw_schema`, `cgw_invoke`, `cgw_health`, `cgw_audit`.
+On startup, OpenCode will automatically connect to cgw_mcp and receive the available tools: `cgw_groups`, `cgw_list`, `cgw_schema`, `cgw_invoke`, `cgw_health`, `cgw_audit`.
 
 ---
 
-## 7. Проверка работы
+## 7. Verify everything works
 
-### Чек-лист
+### Checklist
 
-- [ ] cgw_mcp сервер запущен (`node index.js status` → running)
-- [ ] Расширение подключено (цветная иконка, фиолетовая рамка)
-- [ ] Скилы импортированы и группы включены
-- [ ] В браузере есть активная сессия в нужных системах
-- [ ] OpenCode настроен с правильным токеном
+- [ ] cgw_mcp server is running (`node index.js status` → running)
+- [ ] Extension is connected (colored icon, purple border)
+- [ ] Skills are imported and groups are enabled
+- [ ] Browser has active sessions in the required systems
+- [ ] OpenCode is configured with the correct token
 
-### Тестовые команды в OpenCode
+### Test commands in OpenCode
 
-Попросите агента выполнить:
-
-```
-Покажи список доступных групп в CorpGateway
-```
-
-Агент вызовет `cgw_groups` и покажет список групп.
+Ask the agent:
 
 ```
-Найди задачу PROJ-123 в Jira
+Show the list of available groups in CorpGateway
 ```
 
-Агент вызовет `cgw_invoke(skill=jira_issue, params={key: "PROJ-123"})`.
+The agent will call `cgw_groups` and display the group list.
 
-### Проверка через HTTP (curl)
+```
+Find issue PROJ-123 in Jira
+```
+
+The agent will call `cgw_invoke(skill=jira_issue, params={key: "PROJ-123"})`.
+
+### Verify via HTTP (curl)
 
 ```bash
-# Статус сервера
+# Server status
 curl -H "Authorization: Bearer <TOKEN>" http://localhost:9877/health
 
-# Ожидаемый ответ:
+# Expected response:
 # {"status":"ok","extension":true,"extensionName":"Chrome Work"}
 ```
 
 ---
 
-## 8. Устранение неполадок
+## 8. Troubleshooting
 
-### Расширение не подключается
+### Extension won't connect
 
-| Симптом | Решение |
-|---------|---------|
-| Иконка остаётся серой | Проверьте, что cgw_mcp запущен: `node index.js status` |
-| «Нет токена расширения» | Откройте настройки расширения и введите `extensionToken` |
-| Ошибка WebSocket | Проверьте URL сервера MCP: должен быть `http://localhost:9877` |
+| Symptom | Solution |
+|---------|----------|
+| Icon stays gray | Check that cgw_mcp is running: `node index.js status` |
+| "No extension token" | Open extension settings and enter `extensionToken` |
+| WebSocket error | Check MCP server URL: should be `http://localhost:9877` |
 
-### Агент не видит инструменты
+### Agent doesn't see tools
 
-| Симптом | Решение |
-|---------|---------|
-| Нет tools в OpenCode | Проверьте `token` (не `extensionToken`) в `opencode.json` |
-| Пустой список групп | Включите хотя бы одну группу в popup расширения |
-| `extension: false` в /health | Нажмите ⚡ Connect в popup расширения |
+| Symptom | Solution |
+|---------|----------|
+| No tools in OpenCode | Check `token` (not `extensionToken`) in `opencode.json` |
+| Empty group list | Enable at least one group in the extension popup |
+| `extension: false` in /health | Click ⚡ Connect in the extension popup |
 
-### Скилы возвращают ошибки
+### Skills return errors
 
-| Симптом | Решение |
-|---------|---------|
-| 401 Unauthorized | Залогиньтесь в соответствующую систему в браузере |
-| 404 Not Found | Проверьте URL скила — замените заглушки на реальные адреса |
-| Network Error | Проверьте, что система доступна из браузера |
+| Symptom | Solution |
+|---------|----------|
+| 401 Unauthorized | Log in to the corresponding system in the browser |
+| 404 Not Found | Check skill URL — replace placeholders with real addresses |
+| Network Error | Check that the system is accessible from the browser |
 
-### Логи
+### Logs
 
-Логи сервера: `~/.corpgateway/logs/`
+Server logs: `~/.corpgateway/logs/`
 
 ```bash
 # Windows
@@ -357,16 +359,16 @@ type %USERPROFILE%\.corpgateway\logs\cgw_mcp_2026-04-01.log
 tail -f ~/.corpgateway/logs/cgw_mcp_$(date +%Y-%m-%d).log
 ```
 
-Логи расширения: `chrome://extensions` → CorpGateway → **Inspect views: service worker**
+Extension logs: `chrome://extensions` → CorpGateway → **Inspect views: service worker**
 
 ---
 
-## Схема компонентов
+## Component Diagram
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
 │                                                              │
-│  OpenCode (AI-агент)                                         │
+│  OpenCode (AI Agent)                                         │
 │       │                                                      │
 │       │ POST /mcp (Bearer token)                             │
 │       ▼                                                      │
@@ -374,9 +376,9 @@ tail -f ~/.corpgateway/logs/cgw_mcp_$(date +%Y-%m-%d).log
 │  │ cgw_mcp  │◄────────────────►│  Chrome Extension     │     │
 │  │ :9877    │                  │                       │     │
 │  │          │                  │  • chrome.cookies     │     │
-│  │ Токены:  │                  │  • chrome.webRequest  │     │
-│  │ • agent  │                  │  • fetch() с сессией  │     │
-│  │ • ext    │                  │  • Настройка скилов   │     │
+│  │ Tokens:  │                  │  • chrome.webRequest  │     │
+│  │ • agent  │                  │  • fetch() w/ session │     │
+│  │ • ext    │                  │  • Skill management   │     │
 │  └──────────┘                  └───────────┬───────────┘     │
 │                                            │                 │
 │                                            │ fetch() + cookies/auth

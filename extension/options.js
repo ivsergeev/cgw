@@ -5,6 +5,8 @@ import {
   importPreset, exportStore
 } from './lib/storage.js';
 
+const t = chrome.i18n.getMessage.bind(chrome.i18n);
+
 // ── State ──────────────────────────────────────────────────
 
 let selectedGroupId = null;   // null = all groups
@@ -17,6 +19,18 @@ let allSkills = [];
 // ── Init ───────────────────────────────────────────────────
 
 async function init() {
+  // Init i18n labels for static HTML elements
+  document.getElementById('addGroupBtn').textContent = t('optAddGroup');
+  document.getElementById('openSettingsBtn').textContent = t('optSettings');
+  document.getElementById('searchInput').placeholder = t('optSearchPlaceholder');
+  document.getElementById('exportBtn').textContent = t('optExport');
+  document.getElementById('importBtn').textContent = t('optImport');
+  document.getElementById('addSkillBtn').textContent = t('optAddSkill');
+  document.getElementById('confirmYes').textContent = t('optConfirmYes');
+  document.getElementById('confirmNo').textContent = t('optConfirmNo');
+  document.getElementById('bridgeStatus').textContent = t('mcpConnecting');
+  document.getElementById('panelEmptyTitle').textContent = t('optNoSkillsPanel');
+
   await refreshData();
   renderGroups();
   renderSkills();
@@ -36,7 +50,7 @@ function checkBridgeStatus() {
     const dot = document.getElementById('bridgeDot');
     const text = document.getElementById('bridgeStatus');
     dot.className = status?.connected ? 'dot on' : 'dot off';
-    text.textContent = status?.connected ? 'MCP: connected' : 'MCP: disconnected';
+    text.textContent = status?.connected ? t('mcpConnected') : t('mcpDisconnected');
   });
   setTimeout(checkBridgeStatus, 5000);
 }
@@ -49,7 +63,7 @@ function renderGroups() {
 
   // "All" item
   const allItem = el('div', { className: `group-item ${selectedGroupId === null ? 'selected' : ''}`, onclick: () => { selectedGroupId = null; renderGroups(); renderSkills(); } });
-  allItem.innerHTML = `<span class="name" style="font-weight:500">Все скилы</span>`;
+  allItem.innerHTML = `<span class="name" style="font-weight:500">${esc(t('optAllSkills'))}</span>`;
   container.appendChild(allItem);
 
   for (const g of allGroups) {
@@ -78,7 +92,7 @@ function renderGroups() {
     });
     item.querySelector('.del-group').addEventListener('click', (e) => {
       e.stopPropagation();
-      showConfirm(`Удалить группу «${g.name}» и все её скилы?`, async () => {
+      showConfirm(t('optDeleteGroupConfirm', [g.name]), async () => {
         await deleteGroup(g.id);
         if (selectedGroupId === g.id) selectedGroupId = null;
         await refreshData();
@@ -125,14 +139,14 @@ function renderSkills() {
         ${s.description ? `<div class="desc">${esc(s.description)}</div>` : ''}
       </div>
       <div class="card-actions">
-        <button class="btn btn-ghost btn-sm test-btn" style="color:#4f7ef7">▶ Тест</button>
+        <button class="btn btn-ghost btn-sm test-btn" style="color:#4f7ef7">${esc(t('optTest'))}</button>
         <button class="btn-icon del-btn">✕</button>
       </div>
     `;
     card.querySelector('.test-btn').addEventListener('click', (e) => { e.stopPropagation(); openTest(s.id); });
     card.querySelector('.del-btn').addEventListener('click', (e) => {
       e.stopPropagation();
-      showConfirm(`Удалить скил «${s.name}»?`, async () => {
+      showConfirm(t('optDeleteSkillConfirm', [s.name]), async () => {
         await deleteSkill(s.id);
         if (selectedSkillId === s.id) clearPanel();
         await refreshData();
@@ -170,19 +184,14 @@ function openEditGroup(groupId) {
 
   const pc = document.getElementById('panelContent');
   pc.innerHTML = `
-    <div class="panel-title">Группа</div>
-    <div class="section-title">Основное</div>
-    <label>Название</label>
+    <div class="panel-title">${esc(t('optGroupName'))}</div>
+    <label>${esc(t('optGroupName'))}</label>
     <input type="text" id="gName" value="${esc(g.name)}">
-    <label>Описание (видно агенту как заголовок группы)</label>
-    <input type="text" id="gDesc" value="${esc(g.description || '')}" placeholder="напр. Jira — управление задачами">
-    <label style="display:flex;align-items:center;gap:8px;margin:8px 0 16px">
-      <input type="checkbox" id="gEnabled" ${g.enabled !== false ? 'checked' : ''}>
-      <span style="font-size:13px">Группа активна (скилы доступны агентам)</span>
-    </label>
+    <label>${esc(t('optGroupDesc'))}</label>
+    <input type="text" id="gDesc" value="${esc(g.description || '')}">
     <div class="flex">
-      <button class="btn btn-primary" id="gSave">Сохранить</button>
-      <button class="btn btn-ghost" id="gCancel">Отмена</button>
+      <button class="btn btn-primary" id="gSave">${esc(t('optSave'))}</button>
+      <button class="btn btn-ghost" id="gCancel">${esc(t('optCancel'))}</button>
     </div>
   `;
   pc.querySelector('#gSave').addEventListener('click', async () => {
@@ -193,7 +202,7 @@ function openEditGroup(groupId) {
     });
     await refreshData();
     renderGroups();
-    toast('Группа сохранена', 'success');
+    toast(t('optGroupSaved'), 'success');
   });
   pc.querySelector('#gCancel').addEventListener('click', clearPanel);
   renderSkills();
@@ -214,61 +223,56 @@ function openEditSkill(skillId) {
 
   const pc = document.getElementById('panelContent');
   pc.innerHTML = `
-    <div class="panel-title">Настройка скила</div>
+    <div class="panel-title">${esc(t('optSkillName'))}</div>
 
-    <div class="section-title">Основное</div>
-    <label>Название (имя функции)</label>
-    <input type="text" id="sName" value="${esc(s.name)}" placeholder="напр. get_employee">
-    <label>Описание (видно агенту)</label>
-    <input type="text" id="sDesc" value="${esc(s.description || '')}" placeholder="Что возвращает этот скил?">
+    <label>${esc(t('optSkillName'))}</label>
+    <input type="text" id="sName" value="${esc(s.name)}" placeholder="get_employee">
+    <label>${esc(t('optSkillDesc'))}</label>
+    <input type="text" id="sDesc" value="${esc(s.description || '')}">
 
-    <div class="section-title">Запрос</div>
-    <label>URL эндпоинта</label>
+    <div class="section-title">${esc(t('optSkillUrl'))}</div>
     <input type="text" id="sUrl" value="${esc(s.url)}" class="mono" placeholder="https://api.corp.com/resource/{id}">
-    <label>Origin URL (необяз.)</label>
+    <label>${esc(t('optSkillOrigin'))}</label>
     <input type="text" id="sOrigin" value="${esc(s.fetchOrigin || '')}" class="mono" placeholder="https://app.corp.com">
-    <div class="hint">Откуда выполнять запрос, если отличается от URL</div>
     <div class="row">
       <div>
-        <label>HTTP метод</label>
+        <label>${esc(t('optSkillMethod'))}</label>
         <select id="sMethod">${methodOptions}</select>
       </div>
       <div>
-        <label>Группа</label>
+        <label>${esc(t('optSkillGroup'))}</label>
         <select id="sGroup">${groupOptions}</select>
       </div>
     </div>
     <div id="bodySection" class="${isBody ? '' : 'hidden'}">
-      <label>Шаблон тела запроса (JSON, {{param}})</label>
+      <label>${esc(t('optSkillBody'))}</label>
       <textarea id="sBody" class="mono" rows="3">${esc(s.bodyTemplate || '')}</textarea>
-      <div class="hint">Параметры как {{имя}}. Если пусто — отправляются как плоский JSON</div>
+      <div class="hint">${esc(t('optSkillBodyHint'))}</div>
     </div>
 
-    <div class="section-title">Ответ</div>
-    <label>Фильтр полей (необяз.)</label>
+    <label>${esc(t('optSkillFilter'))}</label>
     <input type="text" id="sFilter" value="${esc(s.responseFilter || '')}" class="mono" placeholder="key, fields.summary, fields.status.name">
-    <div class="hint">Через запятую, dot-notation. Если пусто — полный ответ</div>
 
-    <div class="section-title">HTTP заголовки</div>
+    <div class="section-title">${esc(t('optSkillHeaders'))}</div>
     <div id="headersList">
       ${Object.entries(s.headers || {}).map(([k,v]) => headerRowHtml(k, v)).join('')}
     </div>
-    <button class="btn btn-ghost btn-sm" id="addHeaderBtn" style="margin-bottom:12px">+ Заголовок</button>
+    <button class="btn btn-ghost btn-sm" id="addHeaderBtn" style="margin-bottom:12px">${esc(t('optAddHeader'))}</button>
 
-    <div class="section-title">Параметры</div>
+    <div class="section-title">${esc(t('optSkillParams'))}</div>
     <div id="paramsList">
       ${(s.parameters || []).map(p => paramCardHtml(p)).join('')}
     </div>
-    <button class="btn btn-ghost btn-sm" id="addParamBtn" style="margin-bottom:12px">+ Параметр</button>
+    <button class="btn btn-ghost btn-sm" id="addParamBtn" style="margin-bottom:12px">${esc(t('optAddParam'))}</button>
 
     <div class="sig-preview">
-      <div class="label">Сигнатура для агента</div>
+      <div class="label">${esc(t('optSkillSignature'))}</div>
       <code id="sigPreview">${esc(compactSig(s))}</code>
     </div>
 
     <div class="flex">
-      <button class="btn btn-primary" id="sSave">Сохранить скил</button>
-      <button class="btn btn-ghost" id="sCancel">Отмена</button>
+      <button class="btn btn-primary" id="sSave">${esc(t('optSaveSkill'))}</button>
+      <button class="btn btn-ghost" id="sCancel">${esc(t('optCancel'))}</button>
     </div>
   `;
 
@@ -303,7 +307,7 @@ function openEditSkill(skillId) {
     await updateSkill(skillId, updates);
     await refreshData();
     renderSkills();
-    toast('Скил сохранён', 'success');
+    toast(t('optSkillSaved'), 'success');
     openEditSkill(skillId); // refresh panel
   });
   pc.querySelector('#sCancel').addEventListener('click', clearPanel);
@@ -321,7 +325,7 @@ function openTest(skillId) {
 
   const pc = document.getElementById('panelContent');
   pc.innerHTML = `
-    <div class="panel-title">Тест: ${esc(s.name)}</div>
+    <div class="panel-title">${esc(t('optTestTitle', [s.name]))}</div>
     <div id="testParams">
       ${(s.parameters || []).map(p => `
         <div style="margin-bottom:10px">
@@ -335,16 +339,16 @@ function openTest(skillId) {
       `).join('')}
     </div>
     <div class="flex" style="margin:12px 0">
-      <button class="btn btn-primary" id="runTest">▶ Запустить</button>
-      <button class="btn btn-ghost" id="testBack">Назад</button>
+      <button class="btn btn-primary" id="runTest">${esc(t('optTestRun'))}</button>
+      <button class="btn btn-ghost" id="testBack">${esc(t('optClose'))}</button>
     </div>
-    <label>Ответ</label>
-    <div class="test-response"><pre id="testResult">Нажмите «Запустить» для выполнения</pre></div>
+    <label>${esc(t('optTestResult'))}</label>
+    <div class="test-response"><pre id="testResult"></pre></div>
   `;
 
   pc.querySelector('#runTest').addEventListener('click', async () => {
     const pre = pc.querySelector('#testResult');
-    pre.textContent = 'Выполняется...';
+    pre.textContent = '...';
 
     const params = {};
     pc.querySelectorAll('[data-param]').forEach(el => {
@@ -381,32 +385,30 @@ async function openSettings() {
   const config = await getConfig();
   const pc = document.getElementById('panelContent');
   pc.innerHTML = `
-    <div class="panel-title">Настройки</div>
+    <div class="panel-title">${esc(t('optSettingsTitle'))}</div>
 
-    <div class="section-title">Подключение к MCP</div>
-    <label>Имя экземпляра</label>
-    <input type="text" id="cfgName" value="${esc(config.instanceName || '')}" placeholder="напр. Chrome Рабочий">
-    <div class="hint">Для идентификации при нескольких браузерах</div>
+    <div class="section-title">${esc(t('optMcpConnection'))}</div>
+    <label>${esc(t('optInstanceName'))}</label>
+    <input type="text" id="cfgName" value="${esc(config.instanceName || '')}" placeholder="Chrome Work">
 
-    <label>URL сервера MCP</label>
+    <label>${esc(t('optMcpUrl'))}</label>
     <input type="text" id="cfgBridgeUrl" class="mono" value="${esc(config.bridgeUrl || 'http://localhost:9877')}" placeholder="http://localhost:9877">
-    <div class="hint">HTTP-адрес cgw_mcp сервера</div>
 
-    <label>Токен расширения</label>
+    <label>${esc(t('optExtToken'))}</label>
     <div class="token-row">
-      <input type="password" id="cfgExtToken" class="mono" value="${esc(config.extensionToken || '')}" placeholder="From ~/.corpgateway/cgw_mcp.json → extensionToken" autocomplete="off">
-      <button class="btn btn-ghost btn-sm" id="toggleExtToken" title="Показать/скрыть">👁</button>
-      <button class="btn btn-ghost btn-sm" id="copyExtToken">Копировать</button>
+      <input type="password" id="cfgExtToken" class="mono" value="${esc(config.extensionToken || '')}" autocomplete="off">
+      <button class="btn btn-ghost btn-sm" id="toggleExtToken" title="${esc(t('optShowHideToken'))}">👁</button>
+      <button class="btn btn-ghost btn-sm" id="copyExtToken">${esc(t('optCopyToken'))}</button>
     </div>
-    <div class="hint">Скопируйте extensionToken из ~/.corpgateway/cgw_mcp.json</div>
+    <div class="hint">${esc(t('optExtTokenHint'))}</div>
 
     <div class="hint" style="margin-top:8px;padding:10px;background:#f0f4ff;border-radius:8px;color:#374151">
-      Токен агента и MCP-инструкция настраиваются в <code style="background:#e5e7eb;padding:2px 4px;border-radius:4px">~/.corpgateway/cgw_mcp.json</code>
+      ${esc(t('optTokenAgentHint'))} <code style="background:#e5e7eb;padding:2px 4px;border-radius:4px">~/.corpgateway/cgw_mcp.json</code>
     </div>
 
     <div class="flex" style="margin-top:16px">
-      <button class="btn btn-primary" id="cfgSave">Сохранить</button>
-      <button class="btn btn-ghost" id="cfgClose">Закрыть</button>
+      <button class="btn btn-primary" id="cfgSave">${esc(t('optSave'))}</button>
+      <button class="btn btn-ghost" id="cfgClose">${esc(t('optClose'))}</button>
     </div>
   `;
 
@@ -416,7 +418,7 @@ async function openSettings() {
   });
   pc.querySelector('#copyExtToken').addEventListener('click', () => {
     navigator.clipboard.writeText(pc.querySelector('#cfgExtToken').value);
-    toast('Скопировано', 'success');
+    toast(t('optCopied'), 'success');
   });
   pc.querySelector('#cfgSave').addEventListener('click', async () => {
     const c = await getConfig();
@@ -429,8 +431,8 @@ async function openSettings() {
     });
     chrome.runtime.sendMessage({ type: 'getStatus' }, (status) => {
       const msg = status?.autoReconnect
-        ? 'Настройки сохранены — переподключение'
-        : 'Настройки сохранены';
+        ? t('optSettingsSavedReconnect')
+        : t('optSettingsSaved');
       toast(msg, 'success');
     });
   });
@@ -569,7 +571,7 @@ document.getElementById('addGroupBtn').addEventListener('click', async () => {
 });
 document.getElementById('addSkillBtn').addEventListener('click', async () => {
   const groupId = selectedGroupId || allGroups[0]?.id;
-  if (!groupId) { toast('Сначала создайте группу', 'error'); return; }
+  if (!groupId) { toast(t('optCreateGroupFirst'), 'error'); return; }
   const s = await addSkill({ name: 'new_skill', description: '', groupId, url: '', httpMethod: 'GET', parameters: [], headers: {}, bodyTemplate: '', fetchOrigin: '', responseFilter: '' });
   await refreshData();
   renderSkills();
@@ -583,11 +585,11 @@ document.getElementById('importFile').addEventListener('change', async (e) => {
   if (!file) return;
   try {
     const result = await importPreset(await file.text());
-    toast(`Импортировано: ${result.groupsAdded} групп, ${result.skillsAdded} скилов`, 'success');
+    toast(t('optImportResult', [String(result.groupsAdded), String(result.skillsAdded)]), 'success');
     await refreshData();
     renderGroups();
     renderSkills();
-  } catch (err) { toast(`Ошибка импорта: ${err.message}`, 'error'); }
+  } catch (err) { toast(t('optImportError', [err.message]), 'error'); }
   e.target.value = '';
 });
 document.getElementById('exportBtn').addEventListener('click', async () => {

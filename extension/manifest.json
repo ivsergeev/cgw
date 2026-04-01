@@ -1,8 +1,9 @@
 {
   "manifest_version": 3,
-  "name": "CorpGateway",
+  "name": "__MSG_extName__",
   "version": "1.0.0",
-  "description": "Корпоративный API-шлюз для AI-агентов. Доступ к внутренним системам через MCP с авторизацией браузера.",
+  "description": "__MSG_extDescription__",
+  "default_locale": "en",
   "permissions": [
     "cookies",
     "storage",
