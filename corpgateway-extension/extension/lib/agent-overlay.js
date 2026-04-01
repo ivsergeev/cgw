@@ -5,82 +5,71 @@
   if (window.__cgwOverlayInjected) return;
   window.__cgwOverlayInjected = true;
 
-  // Only show banner in top frame, but show border in all frames
   const isTopFrame = window === window.top;
-  const BANNER_HEIGHT = 36;
+  const BANNER_HEIGHT = 32;
+  const BORDER_WIDTH = 4;
 
-  // Create host element with Shadow DOM for style isolation
-  const host = document.createElement('div');
-  host.id = '__cgw-overlay-host';
-  host.style.cssText = 'all:initial !important; position:fixed !important; top:0 !important; left:0 !important; width:0 !important; height:0 !important; z-index:2147483647 !important; pointer-events:none !important;';
-  const shadow = host.attachShadow({ mode: 'closed' });
-
-  const style = document.createElement('style');
-  style.textContent = `
-    :host { all: initial !important; }
-
-    .cgw-banner {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: ${BANNER_HEIGHT}px;
-      background: linear-gradient(90deg, #4f46e5, #7c3aed, #6366f1, #4f46e5);
-      background-size: 300% 100%;
-      animation: cgw-shimmer 6s linear infinite;
-      color: #fff;
-      font: 600 13px/${BANNER_HEIGHT}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      text-align: center;
-      letter-spacing: 0.5px;
-      z-index: 2147483647;
-      pointer-events: none;
-      display: none;
-      box-shadow: 0 2px 12px rgba(79, 70, 229, 0.5);
+  // Injected style on <html> for the border glow — no overlay div needed
+  const globalStyle = document.createElement('style');
+  globalStyle.id = '__cgw-global-style';
+  globalStyle.textContent = `
+    html.__cgw-active {
+      outline: ${BORDER_WIDTH}px solid #6366f1 !important;
+      outline-offset: -${BORDER_WIDTH}px !important;
+      animation: __cgw-glow 3s ease-in-out infinite !important;
     }
-
-    .cgw-banner.visible { display: block; }
-
-    .cgw-banner svg {
-      vertical-align: middle;
-      margin-right: 8px;
-      margin-top: -2px;
-    }
-
-    @keyframes cgw-shimmer {
-      0% { background-position: 0% 50%; }
-      100% { background-position: 300% 50%; }
-    }
-
-    .cgw-border {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
-      pointer-events: none;
-      z-index: 2147483646;
-      display: none;
-      outline: 4px solid #6366f1;
-      outline-offset: -4px;
-    }
-
-    .cgw-border.visible {
-      display: block;
-      animation: cgw-glow 3s ease-in-out infinite;
-    }
-
-    @keyframes cgw-glow {
-      0%, 100% { outline-color: rgba(99, 102, 241, 0.8); }
+    ${isTopFrame ? `
+    html.__cgw-active {
+      border-top: ${BANNER_HEIGHT}px solid #4f46e5 !important;
+      margin-top: 0 !important;
+    }` : ''}
+    @keyframes __cgw-glow {
+      0%, 100% { outline-color: rgba(99, 102, 241, 0.7); }
       50% { outline-color: rgba(99, 102, 241, 1); }
     }
   `;
 
-  shadow.appendChild(style);
-
-  // Banner — only in top frame
-  let banner = null;
+  // Banner via Shadow DOM — only in top frame
+  let host = null;
   if (isTopFrame) {
-    banner = document.createElement('div');
+    host = document.createElement('div');
+    host.id = '__cgw-overlay-host';
+    host.style.cssText = 'all:initial !important; position:fixed !important; top:0 !important; left:0 !important; width:0 !important; height:0 !important; z-index:2147483647 !important; pointer-events:none !important;';
+    const shadow = host.attachShadow({ mode: 'closed' });
+
+    const style = document.createElement('style');
+    style.textContent = `
+      :host { all: initial !important; }
+      .cgw-banner {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: ${BANNER_HEIGHT}px;
+        background: linear-gradient(90deg, #4f46e5, #7c3aed, #6366f1, #4f46e5);
+        background-size: 300% 100%;
+        animation: cgw-shimmer 6s linear infinite;
+        color: #fff;
+        font: 600 13px/${BANNER_HEIGHT}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        text-align: center;
+        letter-spacing: 0.5px;
+        z-index: 2147483647;
+        pointer-events: none;
+        display: none;
+      }
+      .cgw-banner.visible { display: block; }
+      .cgw-banner svg {
+        vertical-align: middle;
+        margin-right: 8px;
+        margin-top: -2px;
+      }
+      @keyframes cgw-shimmer {
+        0% { background-position: 0% 50%; }
+        100% { background-position: 300% 50%; }
+      }
+    `;
+
+    const banner = document.createElement('div');
     banner.className = 'cgw-banner';
     banner.innerHTML = `
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -90,31 +79,31 @@
       </svg>
       CorpGateway — браузер под управлением агента
     `;
+
+    shadow.appendChild(style);
     shadow.appendChild(banner);
+
+    host.__cgwBanner = banner;
   }
 
-  // Border — all frames
-  const border = document.createElement('div');
-  border.className = 'cgw-border';
-  shadow.appendChild(border);
-
   function show() {
-    if (banner) banner.classList.add('visible');
-    border.classList.add('visible');
+    document.documentElement.classList.add('__cgw-active');
+    if (host && host.__cgwBanner) host.__cgwBanner.classList.add('visible');
   }
 
   function hide() {
-    if (banner) banner.classList.remove('visible');
-    border.classList.remove('visible');
+    document.documentElement.classList.remove('__cgw-active');
+    if (host && host.__cgwBanner) host.__cgwBanner.classList.remove('visible');
   }
 
-  // Inject into page
+  // Inject
   function inject() {
     if (!document.documentElement) {
       document.addEventListener('DOMContentLoaded', inject, { once: true });
       return;
     }
-    document.documentElement.appendChild(host);
+    document.documentElement.appendChild(globalStyle);
+    if (host) document.documentElement.appendChild(host);
   }
 
   inject();
@@ -129,8 +118,8 @@
   // Query initial state
   try {
     chrome.runtime.sendMessage({ type: 'getStatus' }, (res) => {
-      if (chrome.runtime.lastError) return; // extension context not ready
+      if (chrome.runtime.lastError) return;
       if (res && res.connected) show();
     });
-  } catch {} // ignore if extension context invalidated
+  } catch {}
 })();
