@@ -4,6 +4,8 @@
 
 Chrome extension + MCP server for connecting AI agents to corporate systems via browser session.
 
+> **[Installation Guide](SETUP.md)** | **[Creating Custom Skills](SKILLS.md)**
+
 ## How It Works
 
 ```
@@ -140,7 +142,7 @@ The agent receives 6 meta-tools:
 
 ## Skill Configuration
 
-> **Detailed guide:** [Creating Custom Skills](docs/SKILLS.md) ([Русский](docs/SKILLS.ru.md))
+> **Detailed guide:** [Creating Custom Skills](SKILLS.md) ([Русский](docs/SKILLS.ru.md))
 
 ### Via extension UI
 
@@ -379,9 +381,9 @@ If the extension is installed in multiple Chrome profiles:
 ├── docs/                       # Documentation
 │   ├── README.ru.md            # README (Russian)
 │   ├── SETUP.ru.md             # Setup guide (Russian)
-│   ├── SKILLS.md               # Creating custom skills
 │   └── SKILLS.ru.md            # Creating custom skills (Russian)
 │
 ├── README.md                   # This file
-└── SETUP.md                    # Installation guide
+├── SETUP.md                    # Installation guide
+└── SKILLS.md                   # Creating custom skills
 ```

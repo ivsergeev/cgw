@@ -1,6 +1,6 @@
 # Creating Custom Skills
 
-[Русская версия](SKILLS.ru.md)
+[Русская версия](docs/SKILLS.ru.md)
 
 This guide walks you through creating skills from scratch — from a simple GET endpoint to complex POST requests with templates.
 

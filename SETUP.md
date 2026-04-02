@@ -229,7 +229,7 @@ In the extension popup or settings sidebar, each group has a toggle. Disabled gr
 
 Skills can require a one-time confirmation code before execution. When enabled, the extension shows a 4-digit code via an OS notification — the user tells the code to the agent, and the agent retries the call with the code.
 
-To enable: open a skill in the editor → check **"Require confirmation"**. See [Creating Custom Skills](docs/SKILLS.md#operation-confirmation) for details.
+To enable: open a skill in the editor → check **"Require confirmation"**. See [Creating Custom Skills](SKILLS.md#operation-confirmation) for details.
 
 ---
 
