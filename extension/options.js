@@ -197,8 +197,7 @@ function openEditGroup(groupId) {
   pc.querySelector('#gSave').addEventListener('click', async () => {
     await updateGroup(groupId, {
       name: pc.querySelector('#gName').value.trim(),
-      description: pc.querySelector('#gDesc').value.trim(),
-      enabled: pc.querySelector('#gEnabled').checked
+      description: pc.querySelector('#gDesc').value.trim()
     });
     await refreshData();
     renderGroups();
