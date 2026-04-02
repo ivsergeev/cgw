@@ -86,7 +86,7 @@
   "confirmNotifTitle": { "message": "CorpGateway — confirm operation" },
   "confirmNotifMessage": { "message": "$SKILL$($PARAMS$)", "placeholders": { "SKILL": { "content": "$1" }, "PARAMS": { "content": "$2" } } },
   "confirmNotifCode": { "message": "Code: $CODE$", "placeholders": { "CODE": { "content": "$1" } } },
-  "confirmPending": { "message": "⚠ Operation \"$SKILL$\" requires confirmation. A 4-digit code was sent via browser notification.\n\nYou MUST present the user with exactly these two options:\n1. Enter confirmation code\n2. Cancel operation\n\nDo not add any other text or explanation. Wait for the user to choose. If they enter a code, call cgw_invoke again with the same parameters plus confirmCode. If they cancel, stop and do not retry.", "placeholders": { "SKILL": { "content": "$1" } } },
+  "confirmPending": { "message": "⚠ \"$SKILL$\" requires a confirmation code. The code was sent to the user via browser notification. Ask the user for the code or to cancel. If they provide a code, call cgw_invoke again with confirmCode. If they cancel, do not retry.", "placeholders": { "SKILL": { "content": "$1" } } },
   "confirmExpired": { "message": "Confirmation code expired. A new code has been sent to the user." },
   "confirmInvalid": { "message": "Invalid confirmation code. Check the code in the browser notification and try again." },
   "optSkillConfirm": { "message": "Require confirmation" },
