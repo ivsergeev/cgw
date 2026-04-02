@@ -11,14 +11,14 @@
     {
       "Id": "00000000-0000-0000-0002-000000000001",
       "Name": "conf_search",
-      "Description": "Поиск страниц по CQL-запросу",
+      "Description": "Search pages by CQL query",
       "GroupId": "confluence",
       "Url": "https://CONFLUENCE_URL/rest/api/content/search",
       "HttpMethod": "GET",
       "Parameters": [
-        { "Name": "cql", "Description": "CQL-запрос (напр. text ~ \"архитектура\" AND space = DEV)", "Type": "String", "Required": true },
-        { "Name": "limit", "Description": "Макс. кол-во результатов", "Type": "Integer", "Required": false },
-        { "Name": "start", "Description": "Смещение для пагинации", "Type": "Integer", "Required": false }
+        { "Name": "cql", "Description": "CQL query (e.g. text ~ \"architecture\" AND space = DEV)", "Type": "String", "Required": true },
+        { "Name": "limit", "Description": "Max results", "Type": "Integer", "Required": false },
+        { "Name": "start", "Description": "Pagination offset", "Type": "Integer", "Required": false }
       ],
       "Headers": {},
       "BodyTemplate": "",
@@ -30,13 +30,13 @@
     {
       "Id": "00000000-0000-0000-0002-000000000002",
       "Name": "conf_page",
-      "Description": "Содержимое страницы",
+      "Description": "Page content",
       "GroupId": "confluence",
       "Url": "https://CONFLUENCE_URL/rest/api/content/{id}",
       "HttpMethod": "GET",
       "Parameters": [
-        { "Name": "id", "Description": "ID страницы", "Type": "Integer", "Required": true },
-        { "Name": "expand", "Description": "Расширения (напр. body.storage,version,space)", "Type": "String", "Required": false }
+        { "Name": "id", "Description": "Page ID", "Type": "Integer", "Required": true },
+        { "Name": "expand", "Description": "Expansions (e.g. body.storage,version,space)", "Type": "String", "Required": false }
       ],
       "Headers": {},
       "BodyTemplate": "",
@@ -48,13 +48,13 @@
     {
       "Id": "00000000-0000-0000-0002-000000000003",
       "Name": "conf_page_children",
-      "Description": "Дочерние страницы",
+      "Description": "Child pages",
       "GroupId": "confluence",
       "Url": "https://CONFLUENCE_URL/rest/api/content/{id}/child/page",
       "HttpMethod": "GET",
       "Parameters": [
-        { "Name": "id", "Description": "ID родительской страницы", "Type": "Integer", "Required": true },
-        { "Name": "limit", "Description": "Макс. кол-во результатов", "Type": "Integer", "Required": false }
+        { "Name": "id", "Description": "Parent page ID", "Type": "Integer", "Required": true },
+        { "Name": "limit", "Description": "Max results", "Type": "Integer", "Required": false }
       ],
       "Headers": {},
       "BodyTemplate": "",
@@ -66,14 +66,14 @@
     {
       "Id": "00000000-0000-0000-0002-000000000004",
       "Name": "conf_page_comments",
-      "Description": "Комментарии к странице",
+      "Description": "Page comments",
       "GroupId": "confluence",
       "Url": "https://CONFLUENCE_URL/rest/api/content/{id}/child/comment",
       "HttpMethod": "GET",
       "Parameters": [
-        { "Name": "id", "Description": "ID страницы", "Type": "Integer", "Required": true },
-        { "Name": "expand", "Description": "Расширения (напр. body.storage)", "Type": "String", "Required": false },
-        { "Name": "limit", "Description": "Макс. кол-во", "Type": "Integer", "Required": false }
+        { "Name": "id", "Description": "Page ID", "Type": "Integer", "Required": true },
+        { "Name": "expand", "Description": "Expansions (e.g. body.storage)", "Type": "String", "Required": false },
+        { "Name": "limit", "Description": "Max results", "Type": "Integer", "Required": false }
       ],
       "Headers": {},
       "BodyTemplate": "",
@@ -85,13 +85,13 @@
     {
       "Id": "00000000-0000-0000-0002-000000000005",
       "Name": "conf_spaces",
-      "Description": "Список пространств",
+      "Description": "List spaces",
       "GroupId": "confluence",
       "Url": "https://CONFLUENCE_URL/rest/api/space",
       "HttpMethod": "GET",
       "Parameters": [
-        { "Name": "type", "Description": "Тип: global, personal", "Type": "String", "Required": false },
-        { "Name": "limit", "Description": "Макс. кол-во", "Type": "Integer", "Required": false }
+        { "Name": "type", "Description": "Type: global, personal", "Type": "String", "Required": false },
+        { "Name": "limit", "Description": "Max results", "Type": "Integer", "Required": false }
       ],
       "Headers": {},
       "BodyTemplate": "",
@@ -103,14 +103,14 @@
     {
       "Id": "00000000-0000-0000-0002-000000000006",
       "Name": "conf_space_content",
-      "Description": "Контент пространства",
+      "Description": "Space content",
       "GroupId": "confluence",
       "Url": "https://CONFLUENCE_URL/rest/api/space/{spaceKey}/content",
       "HttpMethod": "GET",
       "Parameters": [
-        { "Name": "spaceKey", "Description": "Ключ пространства (напр. DEV)", "Type": "String", "Required": true },
-        { "Name": "depth", "Description": "Глубина: all или root", "Type": "String", "Required": false },
-        { "Name": "limit", "Description": "Макс. кол-во", "Type": "Integer", "Required": false }
+        { "Name": "spaceKey", "Description": "Space key (e.g. DEV)", "Type": "String", "Required": true },
+        { "Name": "depth", "Description": "Depth: all or root", "Type": "String", "Required": false },
+        { "Name": "limit", "Description": "Max results", "Type": "Integer", "Required": false }
       ],
       "Headers": {},
       "BodyTemplate": "",
@@ -122,12 +122,12 @@
     {
       "Id": "00000000-0000-0000-0002-000000000007",
       "Name": "conf_page_history",
-      "Description": "История изменений страницы",
+      "Description": "Page change history",
       "GroupId": "confluence",
       "Url": "https://CONFLUENCE_URL/rest/api/content/{id}/history",
       "HttpMethod": "GET",
       "Parameters": [
-        { "Name": "id", "Description": "ID страницы", "Type": "Integer", "Required": true }
+        { "Name": "id", "Description": "Page ID", "Type": "Integer", "Required": true }
       ],
       "Headers": {},
       "BodyTemplate": "",
@@ -139,12 +139,12 @@
     {
       "Id": "00000000-0000-0000-0002-000000000008",
       "Name": "conf_page_labels",
-      "Description": "Метки страницы",
+      "Description": "Page labels",
       "GroupId": "confluence",
       "Url": "https://CONFLUENCE_URL/rest/api/content/{id}/label",
       "HttpMethod": "GET",
       "Parameters": [
-        { "Name": "id", "Description": "ID страницы", "Type": "Integer", "Required": true }
+        { "Name": "id", "Description": "Page ID", "Type": "Integer", "Required": true }
       ],
       "Headers": {},
       "BodyTemplate": "",
@@ -156,13 +156,13 @@
     {
       "Id": "00000000-0000-0000-0002-000000000009",
       "Name": "conf_page_attachments",
-      "Description": "Вложения страницы",
+      "Description": "Page attachments",
       "GroupId": "confluence",
       "Url": "https://CONFLUENCE_URL/rest/api/content/{id}/child/attachment",
       "HttpMethod": "GET",
       "Parameters": [
-        { "Name": "id", "Description": "ID страницы", "Type": "Integer", "Required": true },
-        { "Name": "limit", "Description": "Макс. кол-во", "Type": "Integer", "Required": false }
+        { "Name": "id", "Description": "Page ID", "Type": "Integer", "Required": true },
+        { "Name": "limit", "Description": "Max results", "Type": "Integer", "Required": false }
       ],
       "Headers": {},
       "BodyTemplate": "",

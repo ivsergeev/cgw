@@ -3,7 +3,7 @@
     {
       "Id": "outlook",
       "Name": "Outlook",
-      "Description": "Microsoft Outlook — почта, календарь, контакты (Microsoft Graph API)",
+      "Description": "Microsoft Outlook -- mail, calendar, contacts (Microsoft Graph API)",
       "Color": "#0078D4"
     }
   ],
@@ -11,7 +11,7 @@
     {
       "Id": "00000000-0000-0000-0006-000000000001",
       "Name": "outlook_me",
-      "Description": "Профиль текущего пользователя",
+      "Description": "Current user profile",
       "GroupId": "outlook",
       "Url": "https://graph.microsoft.com/v1.0/me",
       "HttpMethod": "GET",
@@ -26,17 +26,17 @@
     {
       "Id": "00000000-0000-0000-0006-000000000002",
       "Name": "outlook_messages",
-      "Description": "Список писем из папки (по умолчанию Входящие)",
+      "Description": "List messages from a folder (default Inbox)",
       "GroupId": "outlook",
       "Url": "https://graph.microsoft.com/v1.0/me/mailFolders/{folder}/messages",
       "HttpMethod": "GET",
       "Parameters": [
-        { "Name": "folder", "Description": "Папка: inbox, sentitems, drafts, deleteditems, junkemail, archive", "Type": "String", "Required": true },
-        { "Name": "$top", "Description": "Кол-во писем (по умолчанию 10, макс. 50)", "Type": "Integer", "Required": false },
-        { "Name": "$skip", "Description": "Смещение для пагинации", "Type": "Integer", "Required": false },
-        { "Name": "$select", "Description": "Поля через запятую (напр. subject,from,receivedDateTime)", "Type": "String", "Required": false },
-        { "Name": "$filter", "Description": "OData фильтр (напр. isRead eq false)", "Type": "String", "Required": false },
-        { "Name": "$orderby", "Description": "Сортировка (напр. receivedDateTime desc)", "Type": "String", "Required": false }
+        { "Name": "folder", "Description": "Folder: inbox, sentitems, drafts, deleteditems, junkemail, archive", "Type": "String", "Required": true },
+        { "Name": "$top", "Description": "Message count (default 10, max 50)", "Type": "Integer", "Required": false },
+        { "Name": "$skip", "Description": "Pagination offset", "Type": "Integer", "Required": false },
+        { "Name": "$select", "Description": "Comma-separated fields (e.g. subject,from,receivedDateTime)", "Type": "String", "Required": false },
+        { "Name": "$filter", "Description": "OData filter (e.g. isRead eq false)", "Type": "String", "Required": false },
+        { "Name": "$orderby", "Description": "Sort order (e.g. receivedDateTime desc)", "Type": "String", "Required": false }
       ],
       "Headers": {},
       "BodyTemplate": "",
@@ -48,13 +48,13 @@
     {
       "Id": "00000000-0000-0000-0006-000000000003",
       "Name": "outlook_message",
-      "Description": "Одно письмо по ID (включая тело)",
+      "Description": "Single message by ID (including body)",
       "GroupId": "outlook",
       "Url": "https://graph.microsoft.com/v1.0/me/messages/{message_id}",
       "HttpMethod": "GET",
       "Parameters": [
-        { "Name": "message_id", "Description": "ID письма", "Type": "String", "Required": true },
-        { "Name": "$select", "Description": "Поля (напр. subject,body,from,toRecipients,receivedDateTime)", "Type": "String", "Required": false }
+        { "Name": "message_id", "Description": "Message ID", "Type": "String", "Required": true },
+        { "Name": "$select", "Description": "Fields (e.g. subject,body,from,toRecipients,receivedDateTime)", "Type": "String", "Required": false }
       ],
       "Headers": { "Prefer": "outlook.body-content-type=\"text\"" },
       "BodyTemplate": "",
@@ -66,13 +66,13 @@
     {
       "Id": "00000000-0000-0000-0006-000000000004",
       "Name": "outlook_search_messages",
-      "Description": "Поиск писем по ключевым словам",
+      "Description": "Search messages by keywords",
       "GroupId": "outlook",
       "Url": "https://graph.microsoft.com/v1.0/me/messages",
       "HttpMethod": "GET",
       "Parameters": [
-        { "Name": "$search", "Description": "Поисковый запрос (по теме, телу, отправителю)", "Type": "String", "Required": true },
-        { "Name": "$top", "Description": "Кол-во результатов (по умолчанию 10)", "Type": "Integer", "Required": false }
+        { "Name": "$search", "Description": "Search query (by subject, body, sender)", "Type": "String", "Required": true },
+        { "Name": "$top", "Description": "Results count (default 10)", "Type": "Integer", "Required": false }
       ],
       "Headers": {},
       "BodyTemplate": "",
@@ -84,15 +84,15 @@
     {
       "Id": "00000000-0000-0000-0006-000000000005",
       "Name": "outlook_events",
-      "Description": "События календаря (ближайшие)",
+      "Description": "Calendar events (upcoming)",
       "GroupId": "outlook",
       "Url": "https://graph.microsoft.com/v1.0/me/events",
       "HttpMethod": "GET",
       "Parameters": [
-        { "Name": "$top", "Description": "Кол-во событий (по умолчанию 10)", "Type": "Integer", "Required": false },
-        { "Name": "$select", "Description": "Поля (напр. subject,start,end,location,organizer)", "Type": "String", "Required": false },
-        { "Name": "$filter", "Description": "OData фильтр (напр. start/dateTime ge '2024-01-01')", "Type": "String", "Required": false },
-        { "Name": "$orderby", "Description": "Сортировка (напр. start/dateTime asc)", "Type": "String", "Required": false }
+        { "Name": "$top", "Description": "Events count (default 10)", "Type": "Integer", "Required": false },
+        { "Name": "$select", "Description": "Fields (e.g. subject,start,end,location,organizer)", "Type": "String", "Required": false },
+        { "Name": "$filter", "Description": "OData filter (e.g. start/dateTime ge '2024-01-01')", "Type": "String", "Required": false },
+        { "Name": "$orderby", "Description": "Sort order (e.g. start/dateTime asc)", "Type": "String", "Required": false }
       ],
       "Headers": {},
       "BodyTemplate": "",
@@ -104,15 +104,15 @@
     {
       "Id": "00000000-0000-0000-0006-000000000006",
       "Name": "outlook_calendar_view",
-      "Description": "События календаря за период (calendarView)",
+      "Description": "Calendar events for a date range (calendarView)",
       "GroupId": "outlook",
       "Url": "https://graph.microsoft.com/v1.0/me/calendarView",
       "HttpMethod": "GET",
       "Parameters": [
-        { "Name": "startDateTime", "Description": "Начало периода ISO 8601 (напр. 2024-03-01T00:00:00Z)", "Type": "String", "Required": true },
-        { "Name": "endDateTime", "Description": "Конец периода ISO 8601 (напр. 2024-03-31T23:59:59Z)", "Type": "String", "Required": true },
-        { "Name": "$top", "Description": "Кол-во событий", "Type": "Integer", "Required": false },
-        { "Name": "$select", "Description": "Поля через запятую", "Type": "String", "Required": false }
+        { "Name": "startDateTime", "Description": "Period start ISO 8601 (e.g. 2024-03-01T00:00:00Z)", "Type": "String", "Required": true },
+        { "Name": "endDateTime", "Description": "Period end ISO 8601 (e.g. 2024-03-31T23:59:59Z)", "Type": "String", "Required": true },
+        { "Name": "$top", "Description": "Events count", "Type": "Integer", "Required": false },
+        { "Name": "$select", "Description": "Comma-separated fields", "Type": "String", "Required": false }
       ],
       "Headers": { "Prefer": "outlook.timezone=\"Europe/Moscow\"" },
       "BodyTemplate": "",
@@ -124,12 +124,12 @@
     {
       "Id": "00000000-0000-0000-0006-000000000007",
       "Name": "outlook_event",
-      "Description": "Одно событие календаря по ID",
+      "Description": "Single calendar event by ID",
       "GroupId": "outlook",
       "Url": "https://graph.microsoft.com/v1.0/me/events/{event_id}",
       "HttpMethod": "GET",
       "Parameters": [
-        { "Name": "event_id", "Description": "ID события", "Type": "String", "Required": true }
+        { "Name": "event_id", "Description": "Event ID", "Type": "String", "Required": true }
       ],
       "Headers": {},
       "BodyTemplate": "",
@@ -141,14 +141,14 @@
     {
       "Id": "00000000-0000-0000-0006-000000000008",
       "Name": "outlook_contacts",
-      "Description": "Список контактов пользователя",
+      "Description": "User contacts list",
       "GroupId": "outlook",
       "Url": "https://graph.microsoft.com/v1.0/me/contacts",
       "HttpMethod": "GET",
       "Parameters": [
-        { "Name": "$top", "Description": "Кол-во контактов (по умолчанию 10)", "Type": "Integer", "Required": false },
-        { "Name": "$search", "Description": "Поиск по имени или email", "Type": "String", "Required": false },
-        { "Name": "$select", "Description": "Поля (напр. displayName,emailAddresses,companyName)", "Type": "String", "Required": false }
+        { "Name": "$top", "Description": "Contacts count (default 10)", "Type": "Integer", "Required": false },
+        { "Name": "$search", "Description": "Search by name or email", "Type": "String", "Required": false },
+        { "Name": "$select", "Description": "Fields (e.g. displayName,emailAddresses,companyName)", "Type": "String", "Required": false }
       ],
       "Headers": {},
       "BodyTemplate": "",
@@ -160,7 +160,7 @@
     {
       "Id": "00000000-0000-0000-0006-000000000009",
       "Name": "outlook_mail_folders",
-      "Description": "Список почтовых папок",
+      "Description": "List mail folders",
       "GroupId": "outlook",
       "Url": "https://graph.microsoft.com/v1.0/me/mailFolders",
       "HttpMethod": "GET",
@@ -175,13 +175,13 @@
     {
       "Id": "00000000-0000-0000-0006-000000000010",
       "Name": "outlook_people",
-      "Description": "Релевантные контакты (часто используемые)",
+      "Description": "Relevant contacts (frequently used)",
       "GroupId": "outlook",
       "Url": "https://graph.microsoft.com/v1.0/me/people",
       "HttpMethod": "GET",
       "Parameters": [
-        { "Name": "$top", "Description": "Кол-во (по умолчанию 10)", "Type": "Integer", "Required": false },
-        { "Name": "$search", "Description": "Поиск по имени", "Type": "String", "Required": false }
+        { "Name": "$top", "Description": "Count (default 10)", "Type": "Integer", "Required": false },
+        { "Name": "$search", "Description": "Search by name", "Type": "String", "Required": false }
       ],
       "Headers": {},
       "BodyTemplate": "",
@@ -193,12 +193,12 @@
     {
       "Id": "00000000-0000-0000-0006-000000000011",
       "Name": "outlook_unread_count",
-      "Description": "Количество непрочитанных писем по папкам",
+      "Description": "Unread message count by folder",
       "GroupId": "outlook",
       "Url": "https://graph.microsoft.com/v1.0/me/mailFolders",
       "HttpMethod": "GET",
       "Parameters": [
-        { "Name": "$select", "Description": "Поля (displayName,unreadItemCount,totalItemCount)", "Type": "String", "Required": false }
+        { "Name": "$select", "Description": "Fields (displayName,unreadItemCount,totalItemCount)", "Type": "String", "Required": false }
       ],
       "Headers": {},
       "BodyTemplate": "",

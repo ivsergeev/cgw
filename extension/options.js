@@ -600,10 +600,25 @@ document.getElementById('importFile').addEventListener('change', async (e) => {
 });
 document.getElementById('exportBtn').addEventListener('click', async () => {
   const store = await exportStore();
-  const blob = new Blob([JSON.stringify(store, null, 2)], { type: 'application/json' });
+  let data, filename;
+
+  if (selectedGroupId) {
+    // Export selected group only
+    const group = store.groups.find(g => g.id === selectedGroupId);
+    const skills = store.skills.filter(s => s.groupId === selectedGroupId);
+    data = { groups: [group], skills };
+    const safeName = (group?.name || 'group').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    filename = `${safeName}.json`;
+  } else {
+    // Export all
+    data = store;
+    filename = 'corpgateway-export.json';
+  }
+
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = 'corpgateway-export.json';
+  a.download = filename;
   a.click();
   URL.revokeObjectURL(a.href);
 });

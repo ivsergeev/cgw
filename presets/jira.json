@@ -11,12 +11,12 @@
     {
       "Id": "00000000-0000-0000-0001-000000000001",
       "Name": "jira_issue",
-      "Description": "Детали задачи по ключу",
+      "Description": "Get issue details by key",
       "GroupId": "jira",
       "Url": "https://JIRA_URL/rest/api/2/issue/{key}",
       "HttpMethod": "GET",
       "Parameters": [
-        { "Name": "key", "Description": "Ключ задачи (напр. PROJ-123)", "Type": "String", "Required": true }
+        { "Name": "key", "Description": "Issue key (e.g. PROJ-123)", "Type": "String", "Required": true }
       ],
       "Headers": {},
       "BodyTemplate": "",
@@ -28,15 +28,15 @@
     {
       "Id": "00000000-0000-0000-0001-000000000002",
       "Name": "jira_search",
-      "Description": "Поиск задач по JQL",
+      "Description": "Search issues by JQL",
       "GroupId": "jira",
       "Url": "https://JIRA_URL/rest/api/2/search",
       "HttpMethod": "GET",
       "Parameters": [
-        { "Name": "jql", "Description": "JQL-запрос (напр. project = PROJ AND status = Open)", "Type": "String", "Required": true },
-        { "Name": "maxResults", "Description": "Макс. кол-во результатов", "Type": "Integer", "Required": false },
-        { "Name": "fields", "Description": "Поля через запятую (напр. summary,status,assignee)", "Type": "String", "Required": false },
-        { "Name": "startAt", "Description": "Смещение для пагинации", "Type": "Integer", "Required": false }
+        { "Name": "jql", "Description": "JQL query (e.g. project = PROJ AND status = Open)", "Type": "String", "Required": true },
+        { "Name": "maxResults", "Description": "Max results", "Type": "Integer", "Required": false },
+        { "Name": "fields", "Description": "Comma-separated fields (e.g. summary,status,assignee)", "Type": "String", "Required": false },
+        { "Name": "startAt", "Description": "Pagination offset", "Type": "Integer", "Required": false }
       ],
       "Headers": {},
       "BodyTemplate": "",
@@ -48,12 +48,12 @@
     {
       "Id": "00000000-0000-0000-0001-000000000003",
       "Name": "jira_comments",
-      "Description": "Комментарии к задаче",
+      "Description": "Issue comments",
       "GroupId": "jira",
       "Url": "https://JIRA_URL/rest/api/2/issue/{key}/comment",
       "HttpMethod": "GET",
       "Parameters": [
-        { "Name": "key", "Description": "Ключ задачи", "Type": "String", "Required": true }
+        { "Name": "key", "Description": "Issue key", "Type": "String", "Required": true }
       ],
       "Headers": {},
       "BodyTemplate": "",
@@ -65,12 +65,12 @@
     {
       "Id": "00000000-0000-0000-0001-000000000004",
       "Name": "jira_transitions",
-      "Description": "Доступные переходы статуса задачи",
+      "Description": "Available status transitions for an issue",
       "GroupId": "jira",
       "Url": "https://JIRA_URL/rest/api/2/issue/{key}/transitions",
       "HttpMethod": "GET",
       "Parameters": [
-        { "Name": "key", "Description": "Ключ задачи", "Type": "String", "Required": true }
+        { "Name": "key", "Description": "Issue key", "Type": "String", "Required": true }
       ],
       "Headers": {},
       "BodyTemplate": "",
@@ -82,12 +82,12 @@
     {
       "Id": "00000000-0000-0000-0001-000000000005",
       "Name": "jira_project",
-      "Description": "Детали проекта",
+      "Description": "Project details",
       "GroupId": "jira",
       "Url": "https://JIRA_URL/rest/api/2/project/{key}",
       "HttpMethod": "GET",
       "Parameters": [
-        { "Name": "key", "Description": "Ключ проекта (напр. PROJ)", "Type": "String", "Required": true }
+        { "Name": "key", "Description": "Project key (e.g. PROJ)", "Type": "String", "Required": true }
       ],
       "Headers": {},
       "BodyTemplate": "",
@@ -99,7 +99,7 @@
     {
       "Id": "00000000-0000-0000-0001-000000000006",
       "Name": "jira_projects",
-      "Description": "Список всех проектов",
+      "Description": "List all projects",
       "GroupId": "jira",
       "Url": "https://JIRA_URL/rest/api/2/project",
       "HttpMethod": "GET",
@@ -114,12 +114,12 @@
     {
       "Id": "00000000-0000-0000-0001-000000000007",
       "Name": "jira_worklogs",
-      "Description": "Списания времени по задаче",
+      "Description": "Time logs for an issue",
       "GroupId": "jira",
       "Url": "https://JIRA_URL/rest/api/2/issue/{key}/worklog",
       "HttpMethod": "GET",
       "Parameters": [
-        { "Name": "key", "Description": "Ключ задачи", "Type": "String", "Required": true }
+        { "Name": "key", "Description": "Issue key", "Type": "String", "Required": true }
       ],
       "Headers": {},
       "BodyTemplate": "",
@@ -131,14 +131,14 @@
     {
       "Id": "00000000-0000-0000-0001-000000000008",
       "Name": "jira_sprint_issues",
-      "Description": "Задачи текущего спринта на доске",
+      "Description": "Issues in the current sprint on a board",
       "GroupId": "jira",
       "Url": "https://JIRA_URL/rest/agile/1.0/board/{boardId}/sprint/{sprintId}/issue",
       "HttpMethod": "GET",
       "Parameters": [
-        { "Name": "boardId", "Description": "ID доски", "Type": "Integer", "Required": true },
-        { "Name": "sprintId", "Description": "ID спринта", "Type": "Integer", "Required": true },
-        { "Name": "maxResults", "Description": "Макс. кол-во", "Type": "Integer", "Required": false }
+        { "Name": "boardId", "Description": "Board ID", "Type": "Integer", "Required": true },
+        { "Name": "sprintId", "Description": "Sprint ID", "Type": "Integer", "Required": true },
+        { "Name": "maxResults", "Description": "Max results", "Type": "Integer", "Required": false }
       ],
       "Headers": {},
       "BodyTemplate": "",
@@ -150,13 +150,13 @@
     {
       "Id": "00000000-0000-0000-0001-000000000009",
       "Name": "jira_boards",
-      "Description": "Список досок",
+      "Description": "List boards",
       "GroupId": "jira",
       "Url": "https://JIRA_URL/rest/agile/1.0/board",
       "HttpMethod": "GET",
       "Parameters": [
-        { "Name": "name", "Description": "Фильтр по названию доски", "Type": "String", "Required": false },
-        { "Name": "type", "Description": "Тип: scrum, kanban", "Type": "String", "Required": false }
+        { "Name": "name", "Description": "Filter by board name", "Type": "String", "Required": false },
+        { "Name": "type", "Description": "Type: scrum, kanban", "Type": "String", "Required": false }
       ],
       "Headers": {},
       "BodyTemplate": "",
@@ -168,13 +168,13 @@
     {
       "Id": "00000000-0000-0000-0001-000000000010",
       "Name": "jira_sprints",
-      "Description": "Спринты доски",
+      "Description": "Board sprints",
       "GroupId": "jira",
       "Url": "https://JIRA_URL/rest/agile/1.0/board/{boardId}/sprint",
       "HttpMethod": "GET",
       "Parameters": [
-        { "Name": "boardId", "Description": "ID доски", "Type": "Integer", "Required": true },
-        { "Name": "state", "Description": "Состояние: active, closed, future", "Type": "String", "Required": false }
+        { "Name": "boardId", "Description": "Board ID", "Type": "Integer", "Required": true },
+        { "Name": "state", "Description": "State: active, closed, future", "Type": "String", "Required": false }
       ],
       "Headers": {},
       "BodyTemplate": "",

@@ -3,7 +3,7 @@
     {
       "Id": "mattermost",
       "Name": "Mattermost",
-      "Description": "Mattermost — корпоративный мессенджер (чтение каналов, сообщений, пользователей)",
+      "Description": "Mattermost -- corporate messenger (read channels, messages, users)",
       "Color": "#0058CC"
     }
   ],
@@ -11,7 +11,7 @@
     {
       "Id": "00000000-0000-0000-0005-000000000001",
       "Name": "mm_me",
-      "Description": "Профиль текущего авторизованного пользователя",
+      "Description": "Current authenticated user profile",
       "GroupId": "mattermost",
       "Url": "https://MATTERMOST_URL/api/v4/users/me",
       "HttpMethod": "GET",
@@ -26,12 +26,12 @@
     {
       "Id": "00000000-0000-0000-0005-000000000002",
       "Name": "mm_user",
-      "Description": "Профиль пользователя по ID",
+      "Description": "User profile by ID",
       "GroupId": "mattermost",
       "Url": "https://MATTERMOST_URL/api/v4/users/{user_id}",
       "HttpMethod": "GET",
       "Parameters": [
-        { "Name": "user_id", "Description": "ID пользователя", "Type": "String", "Required": true }
+        { "Name": "user_id", "Description": "User ID", "Type": "String", "Required": true }
       ],
       "Headers": {},
       "BodyTemplate": "",
@@ -43,12 +43,12 @@
     {
       "Id": "00000000-0000-0000-0005-000000000003",
       "Name": "mm_user_by_username",
-      "Description": "Профиль пользователя по username",
+      "Description": "User profile by username",
       "GroupId": "mattermost",
       "Url": "https://MATTERMOST_URL/api/v4/users/username/{username}",
       "HttpMethod": "GET",
       "Parameters": [
-        { "Name": "username", "Description": "Username пользователя", "Type": "String", "Required": true }
+        { "Name": "username", "Description": "Username", "Type": "String", "Required": true }
       ],
       "Headers": {},
       "BodyTemplate": "",
@@ -60,7 +60,7 @@
     {
       "Id": "00000000-0000-0000-0005-000000000004",
       "Name": "mm_my_teams",
-      "Description": "Список команд текущего пользователя",
+      "Description": "Current user's teams",
       "GroupId": "mattermost",
       "Url": "https://MATTERMOST_URL/api/v4/users/me/teams",
       "HttpMethod": "GET",
@@ -75,12 +75,12 @@
     {
       "Id": "00000000-0000-0000-0005-000000000005",
       "Name": "mm_team_channels",
-      "Description": "Каналы команды, доступные текущему пользователю",
+      "Description": "Team channels available to current user",
       "GroupId": "mattermost",
       "Url": "https://MATTERMOST_URL/api/v4/users/me/teams/{team_id}/channels",
       "HttpMethod": "GET",
       "Parameters": [
-        { "Name": "team_id", "Description": "ID команды (из mm_my_teams)", "Type": "String", "Required": true }
+        { "Name": "team_id", "Description": "Team ID (from mm_my_teams)", "Type": "String", "Required": true }
       ],
       "Headers": {},
       "BodyTemplate": "",
@@ -92,12 +92,12 @@
     {
       "Id": "00000000-0000-0000-0005-000000000006",
       "Name": "mm_channel",
-      "Description": "Информация о канале по ID",
+      "Description": "Channel info by ID",
       "GroupId": "mattermost",
       "Url": "https://MATTERMOST_URL/api/v4/channels/{channel_id}",
       "HttpMethod": "GET",
       "Parameters": [
-        { "Name": "channel_id", "Description": "ID канала", "Type": "String", "Required": true }
+        { "Name": "channel_id", "Description": "Channel ID", "Type": "String", "Required": true }
       ],
       "Headers": {},
       "BodyTemplate": "",
@@ -109,13 +109,13 @@
     {
       "Id": "00000000-0000-0000-0005-000000000007",
       "Name": "mm_channel_by_name",
-      "Description": "Информация о канале по имени и команде",
+      "Description": "Channel info by name and team",
       "GroupId": "mattermost",
       "Url": "https://MATTERMOST_URL/api/v4/teams/{team_id}/channels/name/{channel_name}",
       "HttpMethod": "GET",
       "Parameters": [
-        { "Name": "team_id", "Description": "ID команды", "Type": "String", "Required": true },
-        { "Name": "channel_name", "Description": "Имя канала (slug, напр. town-square)", "Type": "String", "Required": true }
+        { "Name": "team_id", "Description": "Team ID", "Type": "String", "Required": true },
+        { "Name": "channel_name", "Description": "Channel name (slug, e.g. town-square)", "Type": "String", "Required": true }
       ],
       "Headers": {},
       "BodyTemplate": "",
@@ -127,14 +127,14 @@
     {
       "Id": "00000000-0000-0000-0005-000000000008",
       "Name": "mm_channel_posts",
-      "Description": "Сообщения канала (последние, с пагинацией)",
+      "Description": "Channel messages (latest, with pagination)",
       "GroupId": "mattermost",
       "Url": "https://MATTERMOST_URL/api/v4/channels/{channel_id}/posts",
       "HttpMethod": "GET",
       "Parameters": [
-        { "Name": "channel_id", "Description": "ID канала", "Type": "String", "Required": true },
-        { "Name": "per_page", "Description": "Кол-во сообщений (по умолчанию 60, макс. 200)", "Type": "Integer", "Required": false },
-        { "Name": "page", "Description": "Номер страницы (с 0)", "Type": "Integer", "Required": false }
+        { "Name": "channel_id", "Description": "Channel ID", "Type": "String", "Required": true },
+        { "Name": "per_page", "Description": "Messages count (default 60, max 200)", "Type": "Integer", "Required": false },
+        { "Name": "page", "Description": "Page number (from 0)", "Type": "Integer", "Required": false }
       ],
       "Headers": {},
       "BodyTemplate": "",
@@ -146,12 +146,12 @@
     {
       "Id": "00000000-0000-0000-0005-000000000009",
       "Name": "mm_post",
-      "Description": "Одно сообщение по ID",
+      "Description": "Single message by ID",
       "GroupId": "mattermost",
       "Url": "https://MATTERMOST_URL/api/v4/posts/{post_id}",
       "HttpMethod": "GET",
       "Parameters": [
-        { "Name": "post_id", "Description": "ID сообщения", "Type": "String", "Required": true }
+        { "Name": "post_id", "Description": "Message ID", "Type": "String", "Required": true }
       ],
       "Headers": {},
       "BodyTemplate": "",
@@ -163,12 +163,12 @@
     {
       "Id": "00000000-0000-0000-0005-000000000010",
       "Name": "mm_post_thread",
-      "Description": "Тред сообщения (ответы)",
+      "Description": "Message thread (replies)",
       "GroupId": "mattermost",
       "Url": "https://MATTERMOST_URL/api/v4/posts/{post_id}/thread",
       "HttpMethod": "GET",
       "Parameters": [
-        { "Name": "post_id", "Description": "ID корневого сообщения треда", "Type": "String", "Required": true }
+        { "Name": "post_id", "Description": "Root message ID of the thread", "Type": "String", "Required": true }
       ],
       "Headers": {},
       "BodyTemplate": "",
@@ -180,14 +180,14 @@
     {
       "Id": "00000000-0000-0000-0005-000000000011",
       "Name": "mm_search_posts",
-      "Description": "Поиск сообщений в команде",
+      "Description": "Search messages in a team",
       "GroupId": "mattermost",
       "Url": "https://MATTERMOST_URL/api/v4/teams/{team_id}/posts/search",
       "HttpMethod": "POST",
       "Parameters": [
-        { "Name": "team_id", "Description": "ID команды", "Type": "String", "Required": true },
-        { "Name": "terms", "Description": "Поисковый запрос (поддерживает операторы: from:, in:, before:, after:)", "Type": "String", "Required": true },
-        { "Name": "is_or_search", "Description": "OR вместо AND между словами", "Type": "Boolean", "Required": false }
+        { "Name": "team_id", "Description": "Team ID", "Type": "String", "Required": true },
+        { "Name": "terms", "Description": "Search query (supports operators: from:, in:, before:, after:)", "Type": "String", "Required": true },
+        { "Name": "is_or_search", "Description": "OR instead of AND between words", "Type": "Boolean", "Required": false }
       ],
       "Headers": {},
       "BodyTemplate": "{\"terms\": \"{{terms}}\", \"is_or_search\": {{is_or_search}}}",
@@ -199,14 +199,14 @@
     {
       "Id": "00000000-0000-0000-0005-000000000012",
       "Name": "mm_channel_members",
-      "Description": "Участники канала",
+      "Description": "Channel members",
       "GroupId": "mattermost",
       "Url": "https://MATTERMOST_URL/api/v4/channels/{channel_id}/members",
       "HttpMethod": "GET",
       "Parameters": [
-        { "Name": "channel_id", "Description": "ID канала", "Type": "String", "Required": true },
-        { "Name": "per_page", "Description": "Кол-во на страницу (по умолчанию 60)", "Type": "Integer", "Required": false },
-        { "Name": "page", "Description": "Номер страницы (с 0)", "Type": "Integer", "Required": false }
+        { "Name": "channel_id", "Description": "Channel ID", "Type": "String", "Required": true },
+        { "Name": "per_page", "Description": "Results per page (default 60)", "Type": "Integer", "Required": false },
+        { "Name": "page", "Description": "Page number (from 0)", "Type": "Integer", "Required": false }
       ],
       "Headers": {},
       "BodyTemplate": "",
@@ -218,13 +218,13 @@
     {
       "Id": "00000000-0000-0000-0005-000000000013",
       "Name": "mm_user_channels",
-      "Description": "Каналы пользователя в команде (включая личные сообщения)",
+      "Description": "User channels in a team (including direct messages)",
       "GroupId": "mattermost",
       "Url": "https://MATTERMOST_URL/api/v4/users/{user_id}/teams/{team_id}/channels",
       "HttpMethod": "GET",
       "Parameters": [
-        { "Name": "user_id", "Description": "ID пользователя (или me)", "Type": "String", "Required": true },
-        { "Name": "team_id", "Description": "ID команды", "Type": "String", "Required": true }
+        { "Name": "user_id", "Description": "User ID (or me)", "Type": "String", "Required": true },
+        { "Name": "team_id", "Description": "Team ID", "Type": "String", "Required": true }
       ],
       "Headers": {},
       "BodyTemplate": "",
@@ -236,12 +236,12 @@
     {
       "Id": "00000000-0000-0000-0005-000000000014",
       "Name": "mm_unread",
-      "Description": "Непрочитанные сообщения текущего пользователя в канале",
+      "Description": "Unread messages for current user in a channel",
       "GroupId": "mattermost",
       "Url": "https://MATTERMOST_URL/api/v4/users/me/channels/{channel_id}/unread",
       "HttpMethod": "GET",
       "Parameters": [
-        { "Name": "channel_id", "Description": "ID канала", "Type": "String", "Required": true }
+        { "Name": "channel_id", "Description": "Channel ID", "Type": "String", "Required": true }
       ],
       "Headers": {},
       "BodyTemplate": "",
@@ -253,14 +253,14 @@
     {
       "Id": "00000000-0000-0000-0005-000000000015",
       "Name": "mm_team_members",
-      "Description": "Участники команды",
+      "Description": "Team members",
       "GroupId": "mattermost",
       "Url": "https://MATTERMOST_URL/api/v4/teams/{team_id}/members",
       "HttpMethod": "GET",
       "Parameters": [
-        { "Name": "team_id", "Description": "ID команды", "Type": "String", "Required": true },
-        { "Name": "per_page", "Description": "Кол-во на страницу (по умолчанию 60)", "Type": "Integer", "Required": false },
-        { "Name": "page", "Description": "Номер страницы (с 0)", "Type": "Integer", "Required": false }
+        { "Name": "team_id", "Description": "Team ID", "Type": "String", "Required": true },
+        { "Name": "per_page", "Description": "Results per page (default 60)", "Type": "Integer", "Required": false },
+        { "Name": "page", "Description": "Page number (from 0)", "Type": "Integer", "Required": false }
       ],
       "Headers": {},
       "BodyTemplate": "",
