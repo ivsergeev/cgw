@@ -6,6 +6,8 @@ Chrome extension + MCP server for connecting AI agents to corporate systems via 
 
 > **[Installation Guide](SETUP.md)** | **[Creating Custom Skills](SKILLS.md)**
 
+![CorpGateway Extension](docs/images/Image.png)
+
 ## How It Works
 
 ```

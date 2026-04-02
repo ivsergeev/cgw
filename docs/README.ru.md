@@ -6,6 +6,8 @@ Chrome-расширение + MCP-сервер для подключения AI-
 
 > **[Руководство по установке](SETUP.ru.md)** | **[Создание скилов](SKILLS.ru.md)**
 
+![CorpGateway Extension](images/Image.png)
+
 ## Как это работает
 
 ```
