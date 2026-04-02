@@ -521,17 +521,26 @@ function startServer() {
       }
 
       // Forward to extension
+      //
+      // Error codes for agent:
+      //   -32001  Extension not connected (user needs to click ⚡ Connect in browser)
+      //   -32002  Request timeout (extension didn't respond in time)
+      //   -32003  Service overloaded (too many concurrent requests)
+      //   -32004  Extension connection lost (was connected, but send failed)
+      //   -32601  Method not found
+      //   -32700  Parse error
+
       if (pending.size >= MAX_PENDING) {
         log('WARN', 'Too many pending requests, rejecting');
         res.writeHead(503, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ jsonrpc: '2.0', id: msg.id, error: { code: -32000, message: 'Service overloaded' } }));
+        res.end(JSON.stringify({ jsonrpc: '2.0', id: msg.id, error: { code: -32003, message: 'Too many concurrent requests. Try again later.' } }));
         return;
       }
 
       if (!extWs || extWs.readyState !== 1) {
         log('WARN', 'Extension not connected, rejecting request');
         res.writeHead(502, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ jsonrpc: '2.0', id: msg.id, error: { code: -32000, message: 'Backend unavailable' } }));
+        res.end(JSON.stringify({ jsonrpc: '2.0', id: msg.id, error: { code: -32001, message: 'Browser extension is not connected. The user needs to open Chrome and click the Connect button in the CorpGateway extension.' } }));
         return;
       }
 
@@ -551,7 +560,7 @@ function startServer() {
         pending.delete(reqID);
         log('ERROR', `Extension send failed id=${reqID}`);
         res.writeHead(502, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ jsonrpc: '2.0', id: msg.id, error: { code: -32000, message: 'Backend unavailable' } }));
+        res.end(JSON.stringify({ jsonrpc: '2.0', id: msg.id, error: { code: -32004, message: 'Browser extension connection lost. It may reconnect automatically — retry in a few seconds.' } }));
         return;
       }
 
@@ -559,7 +568,7 @@ function startServer() {
         if (response === null) {
           log('WARN', `Extension timeout id=${reqID}`);
           res.writeHead(504, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ jsonrpc: '2.0', id: msg.id, error: { code: -32000, message: 'Request timeout' } }));
+          res.end(JSON.stringify({ jsonrpc: '2.0', id: msg.id, error: { code: -32002, message: 'Request timed out. The browser extension did not respond. Check that Chrome is running and the extension is connected.' } }));
         } else {
           res.writeHead(200, { 'Content-Type': 'application/json' });
           res.end(response);
