@@ -48,9 +48,8 @@ if ($Uninstall) {
 Unregister-ScheduledTask -TaskName $TaskName -Confirm:$false -ErrorAction SilentlyContinue
 
 # Create scheduled task that starts the daemon at logon
-# VBS wrapper hides the console window (standard Windows approach for background Node.js)
-$VbsPath = Join-Path $ScriptDir 'start-hidden.vbs'
-$Action = New-ScheduledTaskAction -Execute 'wscript.exe' -Argument "`"$VbsPath`" `"$NodeBin`" `"$Entry`"" -WorkingDirectory $ScriptDir
+# "start" mode spawns a detached background process (windowsHide: true) and exits
+$Action = New-ScheduledTaskAction -Execute $NodeBin -Argument "`"$Entry`" start" -WorkingDirectory $ScriptDir
 
 $Trigger = New-ScheduledTaskTrigger -AtLogOn -User $env:USERNAME
 
