@@ -48,12 +48,8 @@ if ($Uninstall) {
 Unregister-ScheduledTask -TaskName $TaskName -Confirm:$false -ErrorAction SilentlyContinue
 
 # Create scheduled task that starts the daemon at logon
-# The daemon itself detaches and runs in background (windowsHide),
-# so the task just kicks it off — no console window
-# Run in foreground mode — Task Scheduler keeps the process alive
-# This avoids the race condition where the "start" command spawns a detached
-# child but Task Scheduler kills the parent (and child) before detach completes
-$Action = New-ScheduledTaskAction -Execute $NodeBin -Argument "`"$Entry`" --foreground" -WorkingDirectory $ScriptDir
+# "start" mode spawns a detached background process (windowsHide: true) and exits
+$Action = New-ScheduledTaskAction -Execute $NodeBin -Argument "`"$Entry`" start" -WorkingDirectory $ScriptDir
 
 $Trigger = New-ScheduledTaskTrigger -AtLogOn -User $env:USERNAME
 
