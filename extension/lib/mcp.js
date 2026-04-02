@@ -225,14 +225,18 @@ function needsConfirmation(skill) {
 
 function showCodeNotification(skillName, params, code) {
   try {
-    const paramSummary = Object.entries(params).map(([k, v]) => `${k}=${v}`).join(', ');
+    const truncate = (s, max = 50) => s.length > max ? s.slice(0, max) + '...' : s;
+    const paramLines = Object.entries(params).map(([k, v]) => `  ${k}: ${truncate(String(v))}`).join('\n');
     const title = chrome.i18n.getMessage('confirmNotifTitle') || 'CorpGateway — confirm operation';
-    const message = chrome.i18n.getMessage('confirmNotifMessage', [skillName, paramSummary || '—', code])
-      || `${skillName}(${paramSummary || '—'}) — code: ${code}`;
+    const message = paramLines ? `${skillName}\n${paramLines}` : skillName;
+    const contextMessage = chrome.i18n.getMessage('confirmNotifCode', [code])
+      || `Code: ${code}`;
     chrome.notifications.create(`cgw-confirm-${Date.now()}`, {
       type: 'basic',
       iconUrl: chrome.runtime.getURL('icons/icon128.png'),
-      title, message,
+      title,
+      message,
+      contextMessage,
       priority: 2,
       requireInteraction: true
     });
@@ -248,8 +252,9 @@ async function callInvoke(args) {
   const skill = await getSkillByName(skillName);
   if (!skill) throw new Error(`Skill not found: ${skillName}`);
 
-  const params = args.params || {};
-  const confirmCode = args.confirmCode;
+  const confirmCode = args.confirmCode || args.params?.confirmCode;
+  const params = { ...(args.params || {}) };
+  delete params.confirmCode; // exclude from hash and from skill execution
 
   // ── Confirmation gate ──
   if (needsConfirmation(skill)) {

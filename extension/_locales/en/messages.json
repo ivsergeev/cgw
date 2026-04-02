@@ -84,7 +84,8 @@
   "paramOptional": { "message": "optional" },
 
   "confirmNotifTitle": { "message": "CorpGateway — confirm operation" },
-  "confirmNotifMessage": { "message": "$SKILL$($PARAMS$) — code: $CODE$", "placeholders": { "SKILL": { "content": "$1" }, "PARAMS": { "content": "$2" }, "CODE": { "content": "$3" } } },
+  "confirmNotifMessage": { "message": "$SKILL$($PARAMS$)", "placeholders": { "SKILL": { "content": "$1" }, "PARAMS": { "content": "$2" } } },
+  "confirmNotifCode": { "message": "Code: $CODE$", "placeholders": { "CODE": { "content": "$1" } } },
   "confirmPending": { "message": "⚠ Operation \"$SKILL$\" requires confirmation. A 4-digit code was sent to the user via browser notification. Ask the user: enter the code to confirm, or say \"cancel\" to abort. If the user provides a code, call cgw_invoke again with the same parameters plus confirmCode. If the user cancels, do not retry.", "placeholders": { "SKILL": { "content": "$1" } } },
   "confirmExpired": { "message": "Confirmation code expired. A new code has been sent to the user." },
   "confirmInvalid": { "message": "Invalid confirmation code. Check the code in the browser notification and try again." },
