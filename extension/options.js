@@ -252,6 +252,12 @@ function openEditSkill(skillId) {
     <label>${esc(t('optSkillFilter'))}</label>
     <input type="text" id="sFilter" value="${esc(s.responseFilter || '')}" class="mono" placeholder="key, fields.summary, fields.status.name">
 
+    <label style="display:flex;align-items:center;gap:8px;margin:12px 0">
+      <input type="checkbox" id="sConfirm" ${s.confirm === true ? 'checked' : ''}>
+      <span style="font-size:13px">${esc(t('optSkillConfirm'))}</span>
+    </label>
+    <div class="hint">${esc(t('optSkillConfirmHint'))}</div>
+
     <div class="section-title">${esc(t('optSkillHeaders'))}</div>
     <div id="headersList">
       ${Object.entries(s.headers || {}).map(([k,v]) => headerRowHtml(k, v)).join('')}
@@ -503,6 +509,7 @@ function collectSkillData(pc) {
     groupId: pc.querySelector('#sGroup').value,
     bodyTemplate: pc.querySelector('#sBody')?.value?.trim() || '',
     responseFilter: pc.querySelector('#sFilter').value.trim(),
+    confirm: pc.querySelector('#sConfirm').checked ? true : undefined,
     headers,
     parameters: collectParams(pc)
   };

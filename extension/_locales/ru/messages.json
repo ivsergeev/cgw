@@ -81,5 +81,13 @@
   "notifAuthMessage": { "message": "Сессия для $ORIGIN$ истекла. Залогиньтесь в браузере и повторите запрос.", "placeholders": { "ORIGIN": { "content": "$1" } } },
 
   "paramRequired": { "message": "обязат." },
-  "paramOptional": { "message": "необяз." }
+  "paramOptional": { "message": "необяз." },
+
+  "confirmNotifTitle": { "message": "CorpGateway — подтвердите операцию" },
+  "confirmNotifMessage": { "message": "$SKILL$($PARAMS$) — код: $CODE$", "placeholders": { "SKILL": { "content": "$1" }, "PARAMS": { "content": "$2" }, "CODE": { "content": "$3" } } },
+  "confirmPending": { "message": "⚠ Операция \"$SKILL$\" требует подтверждения. 4-значный код отправлен пользователю через уведомление браузера. Спросите пользователя: ввести код для подтверждения или сказать «отмена» для отклонения. Если пользователь назвал код — вызовите cgw_invoke снова с теми же параметрами плюс confirmCode. Если отменил — не повторяйте вызов.", "placeholders": { "SKILL": { "content": "$1" } } },
+  "confirmExpired": { "message": "Код подтверждения истёк. Новый код отправлен пользователю." },
+  "confirmInvalid": { "message": "Неверный код подтверждения. Проверьте код в уведомлении браузера." },
+  "optSkillConfirm": { "message": "Требовать подтверждение" },
+  "optSkillConfirmHint": { "message": "При включении пользователь должен ввести одноразовый код для выполнения скила" }
 }

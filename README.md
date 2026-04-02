@@ -233,6 +233,7 @@ After import, replace URL placeholders (`JIRA_URL`, `MATTERMOST_URL`, etc.) with
 │  • Skills in chrome.storage.local (encrypted by Chrome) │
 │  • Audit log: last 100 invocations in session storage   │
 │  • Tokens masked in logs                                │
+│  • Per-skill OTP confirmation via OS notification       │
 └─────────────────────────────────────────────────────────┘
 ```
 

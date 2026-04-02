@@ -2,7 +2,7 @@
 // 5 meta-tools: cgw_groups, cgw_list, cgw_schema, cgw_invoke, cgw_health
 
 import {
-  getEnabledGroups, getEnabledSkills, getGroups
+  getEnabledGroups, getEnabledSkills, getSkillByName, getGroups
 } from './storage.js';
 import { invokeSkill } from './executor.js';
 
@@ -85,12 +85,13 @@ function handleToolsList(id) {
     },
     {
       name: 'cgw_invoke',
-      description: 'Call a corporate skill and return the JSON response. Confirm with user before calling write operations.',
+      description: 'Call a corporate skill. Some skills require a confirmation code — a 4-digit code will be shown to the user in a browser notification. If you get a "confirmation required" response, ask the user for the code and call again with confirmCode.',
       inputSchema: {
         type: 'object',
         properties: {
           skill: { type: 'string', description: 'Skill name.' },
-          params: { type: 'object', description: 'Key-value parameters. All values as strings.', additionalProperties: { type: 'string' } }
+          params: { type: 'object', description: 'Key-value parameters. All values as strings.', additionalProperties: { type: 'string' } },
+          confirmCode: { type: 'string', description: '4-digit confirmation code from the user (required for write operations on second call).' }
         },
         required: ['skill']
       }
@@ -191,25 +192,128 @@ async function callSchema(args) {
   });
 }
 
+// ── Confirmation protocol (OTP via OS notification) ─────────
+// Write operations require a one-time code shown in a browser notification.
+// The agent cannot see the code — only the human can read it.
+//
+// Flow:
+//   1. Agent calls cgw_invoke(skill, params)
+//   2. Extension returns "confirmation required" + sends notification with code
+//   3. Agent asks user for code
+//   4. Agent calls cgw_invoke(skill, params, confirmCode)
+//   5. Extension validates code → executes
+
+const pendingConfirmations = new Map(); // key → { code, expiresAt }
+const CONFIRM_TTL = 60_000; // 60 seconds
+
+function generateCode() {
+  const arr = new Uint16Array(1);
+  crypto.getRandomValues(arr);
+  return String(arr[0] % 10000).padStart(4, '0');
+}
+
+async function confirmKey(skill, params) {
+  const payload = skill + ':' + Object.keys(params).sort().map(k => `${k}=${params[k]}`).join('&');
+  const data = new TextEncoder().encode(payload);
+  const hash = await crypto.subtle.digest('SHA-256', data);
+  return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+function needsConfirmation(skill) {
+  return skill.confirm === true;
+}
+
+function showCodeNotification(skillName, params, code) {
+  try {
+    const paramSummary = Object.entries(params).map(([k, v]) => `${k}=${v}`).join(', ');
+    const title = chrome.i18n.getMessage('confirmNotifTitle') || 'CorpGateway — confirm operation';
+    const message = chrome.i18n.getMessage('confirmNotifMessage', [skillName, paramSummary || '—', code])
+      || `${skillName}(${paramSummary || '—'}) — code: ${code}`;
+    chrome.notifications.create(`cgw-confirm-${Date.now()}`, {
+      type: 'basic',
+      iconUrl: chrome.runtime.getURL('icons/icon128.png'),
+      title, message,
+      priority: 2,
+      requireInteraction: true
+    });
+  } catch (err) {
+    console.warn('[CGW] Notification error:', err.message);
+  }
+}
+
 async function callInvoke(args) {
   const skillName = args.skill;
   if (!skillName) throw new Error('Missing required parameter: skill');
 
+  const skill = await getSkillByName(skillName);
+  if (!skill) throw new Error(`Skill not found: ${skillName}`);
+
+  const params = args.params || {};
+  const confirmCode = args.confirmCode;
+
+  // ── Confirmation gate ──
+  if (needsConfirmation(skill)) {
+    // Cleanup expired entries
+    const now = Date.now();
+    for (const [k, v] of pendingConfirmations) {
+      if (now > v.expiresAt) pendingConfirmations.delete(k);
+    }
+
+    const key = await confirmKey(skillName, params);
+
+    if (!confirmCode) {
+      // Step 1: generate code, notify user, return message to agent
+      const code = generateCode();
+      pendingConfirmations.set(key, { code, expiresAt: now + CONFIRM_TTL });
+      showCodeNotification(skillName, params, code);
+
+      await writeAuditEntry({
+        skill: skillName, params: Object.keys(params),
+        error: 'confirmation_pending', durationMs: 0, ts: new Date().toISOString()
+      });
+
+      const msg = chrome.i18n.getMessage('confirmPending', [skillName])
+        || `⚠ Write operation "${skillName}" requires confirmation. A 4-digit code was sent to the user via browser notification. Ask the user for the code and call cgw_invoke again with the same parameters plus confirmCode.`;
+      return msg;
+    }
+
+    // Step 2: validate code
+    const entry = pendingConfirmations.get(key);
+
+    if (!entry || now > entry.expiresAt) {
+      pendingConfirmations.delete(key);
+      // Send a fresh code
+      const newCode = generateCode();
+      pendingConfirmations.set(key, { code: newCode, expiresAt: now + CONFIRM_TTL });
+      showCodeNotification(skillName, params, newCode);
+
+      throw new Error(chrome.i18n.getMessage('confirmExpired')
+        || 'Confirmation code expired. A new code has been sent to the user.');
+    }
+
+    if (entry.code !== confirmCode) {
+      throw new Error(chrome.i18n.getMessage('confirmInvalid')
+        || 'Invalid confirmation code. Check the code in the browser notification and try again.');
+    }
+
+    // Code valid — consume it
+    pendingConfirmations.delete(key);
+  }
+
+  // ── Execute skill ──
   const startTime = Date.now();
   let error = null;
   let result;
   try {
-    result = await invokeSkill(skillName, args.params || {});
+    result = await invokeSkill(skillName, params);
   } catch (err) {
     error = err.message;
     throw err;
   } finally {
     await writeAuditEntry({
-      skill: skillName,
-      params: Object.keys(args.params || {}),
-      error,
-      durationMs: Date.now() - startTime,
-      ts: new Date().toISOString()
+      skill: skillName, params: Object.keys(params),
+      confirmed: needsConfirmation(skill),
+      error, durationMs: Date.now() - startTime, ts: new Date().toISOString()
     });
   }
   return JSON.stringify(result);

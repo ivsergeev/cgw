@@ -82,6 +82,11 @@ async function getEnabledSkills() {
   return store.skills.filter(s => enabledGroupIds.has(s.groupId));
 }
 
+async function getSkillByName(name) {
+  const skills = await getEnabledSkills();
+  return skills.find(s => s.name.toLowerCase() === name.toLowerCase()) || null;
+}
+
 async function getSkillsByGroup(groupId) {
   const store = await getStore();
   return store.skills.filter(s => s.groupId === groupId);
@@ -199,6 +204,7 @@ async function importPreset(json) {
       bodyTemplate: s.BodyTemplate || s.bodyTemplate || '',
       fetchOrigin: s.FetchOrigin || s.fetchOrigin || '',
       responseFilter: s.ResponseFilter || s.responseFilter || '',
+      confirm: s.Confirm !== undefined ? s.Confirm : (s.confirm !== undefined ? s.confirm : undefined),
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     });
@@ -216,6 +222,6 @@ async function exportStore() {
 export {
   getStore, setStore, getConfig, setConfig,
   getGroups, getEnabledGroups, addGroup, updateGroup, deleteGroup,
-  getSkills, getEnabledSkills, getSkillsByGroup, addSkill, updateSkill, deleteSkill,
+  getSkills, getEnabledSkills, getSkillByName, getSkillsByGroup, addSkill, updateSkill, deleteSkill,
   importPreset, exportStore
 };

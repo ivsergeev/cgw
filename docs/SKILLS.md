@@ -388,3 +388,34 @@ After import, replace `MY_API_URL` with the actual domain.
 - If you get a network error → check that the URL is correct and the system is accessible
 - For detailed logs → `chrome://extensions` → CorpGateway → **Inspect views: service worker**
 - All invocations are logged in the audit log (`cgw_audit` tool)
+
+---
+
+## Operation Confirmation
+
+Skills can be configured to require out-of-band confirmation before execution. This protects against unintended actions by the AI agent.
+
+### How it works
+
+1. The agent calls a skill that has confirmation enabled (e.g. `create_comment`)
+2. The extension generates a **4-digit code** and shows it via an **OS notification**
+3. The extension returns a message to the agent: "Confirmation required. Ask user for the code."
+4. The agent asks the user for the code
+5. The user reads the code from the notification and tells the agent
+6. The agent calls the skill again with the `confirmCode` parameter
+7. The extension validates the code and executes the operation
+
+The agent **cannot see the code** — it only exists in the OS notification. This makes it impossible for prompt injection to bypass the confirmation.
+
+### Configuring per skill
+
+In the skill editor, use the **"Require confirmation"** checkbox:
+- **Checked** — the skill requires a confirmation code before execution
+- **Unchecked** (default) — the skill executes immediately
+
+### Code properties
+
+- 4 random digits (0000–9999)
+- Valid for **60 seconds**
+- One-time use — consumed after successful validation
+- If the code expires or is invalid, a **new code** is automatically generated and sent

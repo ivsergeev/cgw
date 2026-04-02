@@ -41,7 +41,7 @@ Workflow:
 Rules:
 - Only call skills from cgw_list. Never guess skill names.
 - Always call cgw_invoke for fresh data; do not cache results.
-- Confirm with user before calling write operations.`;
+- Some skills require confirmation. If you receive a confirmation code request, ask the user for the code and retry with confirmCode.`;
 
 // ── CLI ────────────────────────────────────────────────────
 
