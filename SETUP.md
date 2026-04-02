@@ -225,6 +225,12 @@ Skills define which APIs are available to the AI agent. You can create them manu
 
 In the extension popup or settings sidebar, each group has a toggle. Disabled groups and their skills are hidden from the AI agent.
 
+### Operation confirmation
+
+Skills can require a one-time confirmation code before execution. When enabled, the extension shows a 4-digit code via an OS notification — the user tells the code to the agent, and the agent retries the call with the code.
+
+To enable: open a skill in the editor → check **"Require confirmation"**. See [Creating Custom Skills](docs/SKILLS.md#operation-confirmation) for details.
+
 ---
 
 ## 6. Connect to OpenCode
