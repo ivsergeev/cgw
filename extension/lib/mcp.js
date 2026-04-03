@@ -1,5 +1,5 @@
 // CorpGateway Extension — MCP JSON-RPC handler
-// 5 meta-tools: cgw_groups, cgw_list, cgw_schema, cgw_invoke, cgw_health
+// 5 meta-tools: cgw_groups, cgw_list, cgw_schema, cgw_invoke, cgw_invoke_confirmed
 
 import {
   getEnabledGroups, getEnabledSkills, getSkillByName, getGroups, getConfig
@@ -85,7 +85,7 @@ function handleToolsList(id) {
     },
     {
       name: 'cgw_invoke',
-      description: 'Call a corporate skill. Only for skills where confirm=false in cgw_schema. If confirm=true, use cgw_invoke_confirmed instead. If you mistakenly use cgw_invoke for a confirmed skill, you will get an OTP fallback flow.',
+      description: 'Call a corporate skill. Only for skills where confirm=false in cgw_schema. If confirm=true, you must use cgw_invoke_confirmed instead — cgw_invoke will be blocked.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -261,8 +261,8 @@ async function callInvoke(args, confirmedTool = false) {
 
   // ── Confirmation gate ──
   // If skill requires confirmation AND agent used cgw_invoke (not cgw_invoke_confirmed):
-  //   - otpFallback=true (default): OTP flow via OS notification
-  //   - otpFallback=false: hard block — agent must use cgw_invoke_confirmed
+  //   - otpFallback=false (default): hard block — agent must use cgw_invoke_confirmed
+  //   - otpFallback=true: OTP flow via OS notification
   if (needsConfirmation(skill) && !confirmedTool) {
     const config = await getConfig();
     if (!config.otpFallback) {

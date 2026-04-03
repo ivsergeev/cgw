@@ -92,5 +92,5 @@
   "optSkillConfirm": { "message": "Require confirmation" },
   "optSkillConfirmHint": { "message": "When enabled, the user must enter a one-time code to execute this skill" },
   "optOtpFallback": { "message": "OTP fallback for confirmed skills" },
-  "optOtpFallbackHint": { "message": "When off, cgw_invoke blocks confirmed skills instead of OTP code flow. Use when your agent supports tool permissions." }
+  "optOtpFallbackHint": { "message": "When enabled, cgw_invoke shows a one-time code via notification instead of blocking. Enable if your agent does not support tool permissions." }
 }
