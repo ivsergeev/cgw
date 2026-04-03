@@ -4,7 +4,7 @@
 
 Chrome-расширение + MCP-сервер для подключения AI-агентов к корпоративным системам через браузерную сессию.
 
-> **[Руководство по установке](SETUP.ru.md)** | **[Создание скилов](SKILLS.ru.md)**
+> **[Руководство по установке](SETUP.ru.md)** | **[Создание скилов](SKILLS.ru.md)** | **[Безопасность](SECURITY.ru.md)**
 
 ![CorpGateway Extension](images/CorpGatewayExtension.png)
 

@@ -4,7 +4,7 @@
 
 Chrome extension + MCP server for connecting AI agents to corporate systems via browser session.
 
-> **[Installation Guide](SETUP.md)** | **[Creating Custom Skills](SKILLS.md)**
+> **[Installation Guide](SETUP.md)** | **[Creating Custom Skills](SKILLS.md)** | **[Security](SECURITY.md)**
 
 ![CorpGateway Extension](docs/images/CorpGatewayExtension.png)
 
@@ -387,9 +387,11 @@ If the extension is installed in multiple Chrome profiles:
 ├── docs/                       # Documentation
 │   ├── README.ru.md            # README (Russian)
 │   ├── SETUP.ru.md             # Setup guide (Russian)
-│   └── SKILLS.ru.md            # Creating custom skills (Russian)
+│   ├── SKILLS.ru.md            # Creating custom skills (Russian)
+│   └── SECURITY.ru.md          # Security architecture (Russian)
 │
 ├── README.md                   # This file
 ├── SETUP.md                    # Installation guide
-└── SKILLS.md                   # Creating custom skills
+├── SKILLS.md                   # Creating custom skills
+└── SECURITY.md                 # Security architecture
 ```
