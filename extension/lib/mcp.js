@@ -1,5 +1,5 @@
 // CorpGateway Extension — MCP JSON-RPC handler
-// 5 meta-tools: cgw_groups, cgw_list, cgw_schema, cgw_invoke, cgw_invoke_confirmed
+// meta-tools: cgw_groups, cgw_list, cgw_schema, cgw_invoke (+cgw_invoke_confirmed in native mode)
 
 import {
   getEnabledGroups, getEnabledSkills, getSkillByName, getGroups, getConfig
@@ -75,7 +75,9 @@ async function handleToolsList(id) {
     },
     {
       name: 'cgw_schema',
-      description: 'Get skill details. Returns parameters, confirm flag (true/false), and the invoke tool to use (cgw_invoke or cgw_invoke_confirmed). Always call this before invoking a skill for the first time.',
+      description: config.confirmMode === 'otp'
+        ? 'Get skill details. Returns parameters and confirm flag. Always call this before invoking a skill for the first time.'
+        : 'Get skill details. Returns parameters, confirm flag, and the invoke tool to use (cgw_invoke or cgw_invoke_confirmed). Always call this before invoking a skill for the first time.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -128,7 +130,12 @@ async function handleToolsCall(id, params) {
       case 'cgw_list':   text = await callList(args); break;
       case 'cgw_schema': text = await callSchema(args); break;
       case 'cgw_invoke': text = await callInvoke(args, false); break;
-      case 'cgw_invoke_confirmed': text = await callInvoke(args, true); break;
+      case 'cgw_invoke_confirmed': {
+        const cfg = await getConfig();
+        if (cfg.confirmMode !== 'native') throw new Error('cgw_invoke_confirmed is not available in OTP mode. Use cgw_invoke.');
+        text = await callInvoke(args, true);
+        break;
+      }
       default: throw new Error(`Unknown tool: ${toolName}`);
     }
     return jsonRpcResult(id, {
@@ -200,16 +207,9 @@ async function callSchema(args) {
   });
 }
 
-// ── Confirmation protocol (OTP via OS notification) ─────────
-// Write operations require a one-time code shown in a browser notification.
-// The agent cannot see the code — only the human can read it.
-//
-// Flow:
-//   1. Agent calls cgw_invoke(skill, params)
-//   2. Extension returns "confirmation required" + sends notification with code
-//   3. Agent asks user for code
-//   4. Agent calls cgw_invoke(skill, params, confirmCode)
-//   5. Extension validates code → executes
+// ── Confirmation protocol ────────────────────────────────────
+// OTP mode: one-time code shown via OS notification
+// Native mode: agent uses cgw_invoke_confirmed (blocked here if wrong tool)
 
 const pendingConfirmations = new Map(); // key → { code, expiresAt }
 const CONFIRM_TTL = 60_000; // 60 seconds
@@ -266,8 +266,8 @@ async function callInvoke(args, confirmedTool = false) {
 
   // ── Confirmation gate ──
   // If skill requires confirmation AND agent used cgw_invoke (not cgw_invoke_confirmed):
-  //   - otpFallback=false (default): hard block — agent must use cgw_invoke_confirmed
-  //   - otpFallback=true: OTP flow via OS notification
+  //   - confirmMode=native (default): hard block — agent must use cgw_invoke_confirmed
+  //   - confirmMode=otp: OTP flow via OS notification
   if (needsConfirmation(skill) && !confirmedTool) {
     const config = await getConfig();
     if (config.confirmMode !== 'otp') {

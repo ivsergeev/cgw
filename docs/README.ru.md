@@ -124,7 +124,7 @@ node index.js
 
 ## MCP Tools
 
-Агент получает 5 мета-инструментов:
+Агент получает следующие мета-инструменты:
 
 | Tool | Описание | Параметры |
 |------|----------|-----------|
@@ -132,7 +132,7 @@ node index.js
 | `cgw_list` | Список скилов (все или по группе) | `group?` |
 | `cgw_schema` | Параметры скила (включая флаг `confirm`) | `skill` |
 | `cgw_invoke` | Вызов скила (`confirm=false`) | `skill`, `params?` |
-| `cgw_invoke_confirmed` | Вызов скила с подтверждением (`confirm=true`) | `skill`, `params?` |
+| `cgw_invoke_confirmed` | Вызов скила с подтверждением (только native mode) | `skill`, `params?` |
 
 ### Workflow агента
 
@@ -388,7 +388,7 @@ WebSocket для расширения. Двухэтапная аутентифи
 │   ├── lib/
 │   │   ├── storage.js          # CRUD skills/groups в chrome.storage
 │   │   ├── executor.js         # Выполнение скилов (fetch + подстановка)
-│   │   └── mcp.js              # MCP JSON-RPC handler (5 meta-tools)
+│   │   └── mcp.js              # MCP JSON-RPC handler (meta-tools)
 │   └── icons/                  # Цветные + серые иконки
 │
 ├── cgw_mcp/                    # MCP Server (Node.js)

@@ -124,7 +124,7 @@ Add to your agent config (`opencode.json`, `.cursor/mcp.json`, etc.):
 
 ## MCP Tools
 
-The agent receives 5 meta-tools:
+The agent receives the following meta-tools:
 
 | Tool | Description | Parameters |
 |------|-------------|------------|
@@ -132,7 +132,7 @@ The agent receives 5 meta-tools:
 | `cgw_list` | List skills (all or by group) | `group?` |
 | `cgw_schema` | Get parameter details for a skill (includes `confirm` flag) | `skill` |
 | `cgw_invoke` | Invoke a skill (for skills with `confirm=false`) | `skill`, `params?` |
-| `cgw_invoke_confirmed` | Invoke a skill that requires confirmation (`confirm=true`) | `skill`, `params?` |
+| `cgw_invoke_confirmed` | Invoke a skill that requires confirmation (native mode only) | `skill`, `params?` |
 
 ### Agent workflow
 
@@ -367,7 +367,7 @@ If the extension is installed in multiple Chrome profiles:
 │   ├── lib/
 │   │   ├── storage.js          # CRUD skills/groups in chrome.storage
 │   │   ├── executor.js         # Skill execution (fetch + substitution)
-│   │   └── mcp.js              # MCP JSON-RPC handler (5 meta-tools)
+│   │   └── mcp.js              # MCP JSON-RPC handler (meta-tools)
 │   ├── _locales/               # i18n (en, ru)
 │   └── icons/                  # Colored + gray icons
 │
