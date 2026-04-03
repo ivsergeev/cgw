@@ -410,7 +410,7 @@ URL:        https://api.example.com/comments/{commentId}
 
 Для подтверждения в OpenCode добавьте `"tools"` в `opencode.json`:
 ```json
-{ "permissions": { "<name>_cgw_invoke_confirmed": "ask" } }
+{ "permission": { "<name>_cgw_invoke_confirmed": "ask" } }
 ```
 Замените `<name>` на ключ MCP-сервера из вашего `opencode.json` (напр. `corp`).
 

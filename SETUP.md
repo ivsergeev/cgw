@@ -250,7 +250,7 @@ Create or edit `opencode.json` in your project root:
       }
     }
   },
-  "permissions": {
+  "permission": {
     "<name>_cgw_invoke_confirmed": "ask"
   }
 }

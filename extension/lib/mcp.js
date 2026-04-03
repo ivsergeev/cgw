@@ -263,6 +263,7 @@ async function callInvoke(args, confirmedTool = false) {
   // If skill requires confirmation AND agent used cgw_invoke (not cgw_invoke_confirmed):
   //   - otpFallback=false (default): hard block — agent must use cgw_invoke_confirmed
   //   - otpFallback=true: OTP flow via OS notification
+  console.log(`[CGW] invoke: skill=${skillName}, confirm=${skill.confirm}, confirmedTool=${confirmedTool}`);
   if (needsConfirmation(skill) && !confirmedTool) {
     const config = await getConfig();
     if (!config.otpFallback) {

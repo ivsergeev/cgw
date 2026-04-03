@@ -410,7 +410,7 @@ If the agent mistakenly uses `cgw_invoke` for a confirmed skill, the extension b
 
 To enable confirmation prompts in OpenCode, add `"tools"` to your `opencode.json`:
 ```json
-{ "permissions": { "<name>_cgw_invoke_confirmed": "ask" } }
+{ "permission": { "<name>_cgw_invoke_confirmed": "ask" } }
 ```
 Replace `<name>` with the MCP server key from your `opencode.json` (e.g. `corp`).
 

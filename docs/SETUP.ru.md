@@ -250,7 +250,7 @@ node index.js restart   # перезапустить
       }
     }
   },
-  "permissions": {
+  "permission": {
     "<name>_cgw_invoke_confirmed": "ask"
   }
 }
