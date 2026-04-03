@@ -124,24 +124,24 @@ Add to your agent config (`opencode.json`, `.cursor/mcp.json`, etc.):
 
 ## MCP Tools
 
-The agent receives 6 meta-tools:
+The agent receives 5 meta-tools:
 
 | Tool | Description | Parameters |
 |------|-------------|------------|
 | `cgw_groups` | List available groups | — |
 | `cgw_list` | List skills (all or by group) | `group?` |
-| `cgw_schema` | Get parameter details for a skill | `skill` |
-| `cgw_invoke` | Invoke a skill | `skill`, `params?` |
-| `cgw_health` | Check server and extension status | — |
-| `cgw_audit` | View last 100 skill invocation log | — |
+| `cgw_schema` | Get parameter details for a skill (includes `confirm` flag) | `skill` |
+| `cgw_invoke` | Invoke a skill (for skills with `confirm=false`) | `skill`, `params?` |
+| `cgw_invoke_confirmed` | Invoke a skill that requires confirmation (`confirm=true`) | `skill`, `params?` |
 
 ### Agent workflow
 
 ```
 1. cgw_groups              → sees groups (Jira, Mattermost, ...)
 2. cgw_list(group=jira)    → sees skills in group
-3. cgw_schema(skill=jira_issue) → sees parameters
-4. cgw_invoke(skill=jira_issue, params={key:"PROJ-1"}) → result
+3. cgw_schema(skill=jira_issue) → sees parameters + confirm flag + which invoke to use
+4. cgw_invoke(skill=jira_issue, params={key:"PROJ-1"}) → result (confirm=false)
+   cgw_invoke_confirmed(skill=delete_issue, params={key:"PROJ-1"}) → result (confirm=true)
 ```
 
 ## Skill Configuration
@@ -241,7 +241,7 @@ After import, replace URL placeholders (`JIRA_URL`, `MATTERMOST_URL`, etc.) with
 │  • Skills in chrome.storage.local (encrypted by Chrome) │
 │  • Audit log: last 100 invocations in session storage   │
 │  • Tokens masked in logs                                │
-│  • Per-skill OTP confirmation via OS notification       │
+│  • Dual confirmation: cgw_invoke_confirmed + OTP fallback│
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -367,7 +367,7 @@ If the extension is installed in multiple Chrome profiles:
 │   ├── lib/
 │   │   ├── storage.js          # CRUD skills/groups in chrome.storage
 │   │   ├── executor.js         # Skill execution (fetch + substitution)
-│   │   └── mcp.js              # MCP JSON-RPC handler (6 meta-tools)
+│   │   └── mcp.js              # MCP JSON-RPC handler (5 meta-tools)
 │   ├── _locales/               # i18n (en, ru)
 │   └── icons/                  # Colored + gray icons
 │

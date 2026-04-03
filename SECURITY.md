@@ -254,7 +254,7 @@ Skills, groups, and extension config are stored in `chrome.storage.local`, which
 | Connection stability | 60-second timeouts + max 100 concurrent requests |
 | Internal network access | URL validation blocks private IPs and non-HTTP protocols |
 | Request injection | CRLF check in headers + JSON validation in body |
-| Destructive operations | Per-skill OTP confirmation via OS notification |
+| Destructive operations | Dual: `cgw_invoke_confirmed` (native client prompt) + OTP fallback |
 | Skill import | Protocol, method, parameter type and count validation |
 | Message origin | Sender validation — only extension pages can send commands |
 | Config file | Restricted file permissions (0600 on Unix) |

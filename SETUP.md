@@ -285,7 +285,19 @@ To make CorpGateway available in all projects, add it to the global config:
 opencode
 ```
 
-On startup, OpenCode will automatically connect to cgw_mcp and receive the available tools: `cgw_groups`, `cgw_list`, `cgw_schema`, `cgw_invoke`, `cgw_health`, `cgw_audit`.
+On startup, OpenCode will automatically connect to cgw_mcp and receive the available tools: `cgw_groups`, `cgw_list`, `cgw_schema`, `cgw_invoke`, `cgw_invoke_confirmed`.
+
+To enable native confirmation prompts for skills with `confirm=true`, add to your `opencode.json`:
+
+```json
+{
+  "permissions": {
+    "mcp:corp:cgw_invoke_confirmed": "ask"
+  }
+}
+```
+
+This makes OpenCode ask for approval in the terminal before executing confirmed skills.
 
 ---
 

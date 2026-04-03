@@ -85,27 +85,29 @@ function handleToolsList(id) {
     },
     {
       name: 'cgw_invoke',
-      description: 'Call a corporate skill. Some skills require a confirmation code — a 4-digit code will be shown to the user in a browser notification. If you get a "confirmation required" response, ask the user for the code and call again with confirmCode.',
+      description: 'Call a corporate skill. Only for skills where confirm=false in cgw_schema. If confirm=true, use cgw_invoke_confirmed instead. If you mistakenly use cgw_invoke for a confirmed skill, you will get an OTP fallback flow.',
       inputSchema: {
         type: 'object',
         properties: {
           skill: { type: 'string', description: 'Skill name.' },
           params: { type: 'object', description: 'Key-value parameters. All values as strings.', additionalProperties: { type: 'string' } },
-          confirmCode: { type: 'string', description: '4-digit confirmation code from the user (required for write operations on second call).' }
+          confirmCode: { type: 'string', description: 'OTP code (only for fallback confirmation flow).' }
         },
         required: ['skill']
       }
     },
     {
-      name: 'cgw_health',
-      description: 'Check if CorpGateway extension is active.',
-      inputSchema: { type: 'object', properties: {}, required: [] }
+      name: 'cgw_invoke_confirmed',
+      description: 'Call a corporate skill that requires confirmation (confirm=true in cgw_schema). Use this instead of cgw_invoke when the skill has confirm=true.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          skill: { type: 'string', description: 'Skill name.' },
+          params: { type: 'object', description: 'Key-value parameters. All values as strings.', additionalProperties: { type: 'string' } }
+        },
+        required: ['skill']
+      }
     },
-    {
-      name: 'cgw_audit',
-      description: 'View recent skill invocation log (last 100 calls). Shows skill name, parameter names, errors, and timing.',
-      inputSchema: { type: 'object', properties: {}, required: [] }
-    }
   ];
   return jsonRpcResult(id, { tools });
 }
@@ -122,9 +124,8 @@ async function handleToolsCall(id, params) {
       case 'cgw_groups': text = await callGroups(); break;
       case 'cgw_list':   text = await callList(args); break;
       case 'cgw_schema': text = await callSchema(args); break;
-      case 'cgw_invoke': text = await callInvoke(args); break;
-      case 'cgw_health': text = callHealth(); break;
-      case 'cgw_audit': text = await callAudit(); break;
+      case 'cgw_invoke': text = await callInvoke(args, false); break;
+      case 'cgw_invoke_confirmed': text = await callInvoke(args, true); break;
       default: throw new Error(`Unknown tool: ${toolName}`);
     }
     return jsonRpcResult(id, {
@@ -183,6 +184,8 @@ async function callSchema(args) {
   return JSON.stringify({
     name: skill.name,
     description: skill.description,
+    confirm: skill.confirm === true,
+    invoke: skill.confirm === true ? 'cgw_invoke_confirmed' : 'cgw_invoke',
     parameters: (skill.parameters || []).map(p => ({
       name: p.name,
       type: (p.type || 'String').toLowerCase(),
@@ -245,7 +248,7 @@ function showCodeNotification(skillName, params, code) {
   }
 }
 
-async function callInvoke(args) {
+async function callInvoke(args, confirmedTool = false) {
   const skillName = args.skill;
   if (!skillName) throw new Error('Missing required parameter: skill');
 
@@ -254,10 +257,13 @@ async function callInvoke(args) {
 
   const confirmCode = args.confirmCode || args.params?.confirmCode;
   const params = { ...(args.params || {}) };
-  delete params.confirmCode; // exclude from hash and from skill execution
+  delete params.confirmCode;
 
   // ── Confirmation gate ──
-  if (needsConfirmation(skill)) {
+  // If skill requires confirmation AND agent used cgw_invoke (not cgw_invoke_confirmed),
+  // fall back to OTP flow. If agent used cgw_invoke_confirmed, skip OTP — the client
+  // (OpenCode) already asked the user for permission.
+  if (needsConfirmation(skill) && !confirmedTool) {
     // Cleanup expired entries
     const now = Date.now();
     for (const [k, v] of pendingConfirmations) {

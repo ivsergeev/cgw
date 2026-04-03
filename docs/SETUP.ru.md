@@ -285,7 +285,19 @@ node index.js restart   # перезапустить
 opencode
 ```
 
-При старте OpenCode автоматически подключится к cgw_mcp и получит список доступных инструментов: `cgw_groups`, `cgw_list`, `cgw_schema`, `cgw_invoke`, `cgw_health`, `cgw_audit`.
+При старте OpenCode автоматически подключится к cgw_mcp и получит список доступных инструментов: `cgw_groups`, `cgw_list`, `cgw_schema`, `cgw_invoke`, `cgw_invoke_confirmed`.
+
+Для включения нативного подтверждения скилов с `confirm=true` добавьте в `opencode.json`:
+
+```json
+{
+  "permissions": {
+    "mcp:corp:cgw_invoke_confirmed": "ask"
+  }
+}
+```
+
+OpenCode будет спрашивать подтверждение в терминале перед выполнением подтверждаемых скилов.
 
 ---
 

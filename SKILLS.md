@@ -393,27 +393,39 @@ After import, replace `MY_API_URL` with the actual domain.
 
 ## Operation Confirmation
 
-Skills can be configured to require out-of-band confirmation before execution. This protects against unintended actions by the AI agent.
+Skills can be configured to require confirmation before execution. This protects against unintended actions by the AI agent.
 
 ### How it works
 
-1. The agent calls a skill that has confirmation enabled (e.g. `create_comment`)
-2. The extension generates a **4-digit code** and shows it via an **OS notification**
-3. The extension returns a message to the agent: "Confirmation required. Ask user for the code."
-4. The agent asks the user for the code
-5. The user reads the code from the notification and tells the agent
-6. The agent calls the skill again with the `confirmCode` parameter
-7. The extension validates the code and executes the operation
+When a skill has `confirm: true`, the agent should use `cgw_invoke_confirmed` instead of `cgw_invoke`. The `cgw_schema` response includes the `confirm` flag and the recommended `invoke` tool name.
 
-The agent **cannot see the code** — it only exists in the OS notification. This makes it impossible for prompt injection to bypass the confirmation.
+**Primary flow (with OpenCode or agents that support permissions):**
+
+1. Agent calls `cgw_schema(skill)` → sees `confirm: true, invoke: "cgw_invoke_confirmed"`
+2. Agent calls `cgw_invoke_confirmed(skill, params)`
+3. OpenCode shows native confirmation prompt in the terminal
+4. User approves → skill executes
+
+To enable native prompts in OpenCode, add to `opencode.json`:
+```json
+{ "permissions": { "mcp:corp:cgw_invoke_confirmed": "ask" } }
+```
+
+**OTP fallback (if agent mistakenly uses cgw_invoke for a confirmed skill):**
+
+1. Agent calls `cgw_invoke(skill, params)` for a skill with `confirm: true`
+2. Extension generates a 4-digit code, shows it via OS notification
+3. Extension returns "confirmation required — ask user for the code"
+4. Agent asks user for the code, calls again with `confirmCode`
+5. Extension validates the code and executes
 
 ### Configuring per skill
 
 In the skill editor, use the **"Require confirmation"** checkbox:
-- **Checked** — the skill requires a confirmation code before execution
+- **Checked** — the skill requires confirmation before execution
 - **Unchecked** (default) — the skill executes immediately
 
-### Code properties
+### OTP code properties
 
 - 4 random digits (0000–9999)
 - Valid for **60 seconds**

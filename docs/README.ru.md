@@ -124,24 +124,24 @@ node index.js
 
 ## MCP Tools
 
-Агент получает 6 мета-инструментов:
+Агент получает 5 мета-инструментов:
 
 | Tool | Описание | Параметры |
 |------|----------|-----------|
 | `cgw_groups` | Список доступных групп | — |
 | `cgw_list` | Список скилов (все или по группе) | `group?` |
-| `cgw_schema` | Параметры конкретного скила | `skill` |
-| `cgw_invoke` | Вызов скила | `skill`, `params?` |
-| `cgw_health` | Статус сервера и расширения | — |
-| `cgw_audit` | Журнал последних 100 вызовов скилов | — |
+| `cgw_schema` | Параметры скила (включая флаг `confirm`) | `skill` |
+| `cgw_invoke` | Вызов скила (`confirm=false`) | `skill`, `params?` |
+| `cgw_invoke_confirmed` | Вызов скила с подтверждением (`confirm=true`) | `skill`, `params?` |
 
 ### Workflow агента
 
 ```
-1. cgw_groups          → видит группы (Jira, Mattermost, ...)
-2. cgw_list(group=jira) → видит скилы группы
-3. cgw_schema(skill=jira_issue) → видит параметры
-4. cgw_invoke(skill=jira_issue, params={key:"PROJ-1"}) → результат
+1. cgw_groups              → видит группы (Jira, Mattermost, ...)
+2. cgw_list(group=jira)    → видит скилы группы
+3. cgw_schema(skill=jira_issue) → видит параметры + флаг confirm + какой invoke использовать
+4. cgw_invoke(skill=jira_issue, params={key:"PROJ-1"}) → результат (confirm=false)
+   cgw_invoke_confirmed(skill=delete_issue, params={key:"PROJ-1"}) → результат (confirm=true)
 ```
 
 ## Настройка скилов
@@ -254,7 +254,7 @@ mm_channel_posts(channel_id:str)  // Сообщения канала
 │  • Скилы в chrome.storage.local (зашифровано Chrome)    │
 │  • Audit log: последние 100 вызовов в session storage   │
 │  • Токены маскируются в логах                           │
-│  • OTP-подтверждение операций через уведомление ОС      │
+│  • Двойное подтверждение: cgw_invoke_confirmed + OTP    │
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -388,7 +388,7 @@ WebSocket для расширения. Двухэтапная аутентифи
 │   ├── lib/
 │   │   ├── storage.js          # CRUD skills/groups в chrome.storage
 │   │   ├── executor.js         # Выполнение скилов (fetch + подстановка)
-│   │   └── mcp.js              # MCP JSON-RPC handler (6 meta-tools)
+│   │   └── mcp.js              # MCP JSON-RPC handler (5 meta-tools)
 │   └── icons/                  # Цветные + серые иконки
 │
 ├── cgw_mcp/                    # MCP Server (Node.js)
