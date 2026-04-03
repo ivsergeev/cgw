@@ -602,35 +602,53 @@ function applyFilter(jsonStr, filter) {
   const data = JSON.parse(jsonStr);
   const paths = filter.split(',').map(p => p.trim()).filter(Boolean);
   if (paths.length === 0) return jsonStr;
+  return JSON.stringify(pickPaths(data, paths));
+}
 
-  const result = Array.isArray(data) ? [] : {};
+function pickPaths(data, paths) {
+  if (data == null) return data;
+
+  // Group paths by first segment
+  const groups = {};
+  const directKeys = new Set();
   for (const path of paths) {
     const parts = path.split('.');
-    setNested(result, parts, getNested(data, parts));
-  }
-  return JSON.stringify(result);
-}
-
-function getNested(obj, parts) {
-  let current = obj;
-  for (let i = 0; i < parts.length; i++) {
-    if (current == null) return undefined;
-    if (Array.isArray(current)) {
-      return current.map(item => getNested(item, parts.slice(i)));
+    if (parts.length === 1) {
+      directKeys.add(parts[0]);
+    } else {
+      const head = parts[0];
+      if (!groups[head]) groups[head] = [];
+      groups[head].push(parts.slice(1).join('.'));
     }
-    current = current[parts[i]];
   }
-  return current;
-}
 
-function setNested(target, parts, value) {
-  if (value === undefined) return;
-  let current = target;
-  for (let i = 0; i < parts.length - 1; i++) {
-    if (!(parts[i] in current)) current[parts[i]] = {};
-    current = current[parts[i]];
+  // Handle arrays — apply all paths to each element
+  if (Array.isArray(data)) {
+    return data.map(item => pickPaths(item, paths)).filter(v => v != null);
   }
-  current[parts[parts.length - 1]] = value;
+
+  const result = {};
+
+  // Direct keys
+  for (const key of directKeys) {
+    if (key in data) result[key] = data[key];
+  }
+
+  // Nested groups — recurse
+  for (const [key, subPaths] of Object.entries(groups)) {
+    if (!(key in data)) continue;
+    const value = data[key];
+    if (Array.isArray(value)) {
+      result[key] = value.map(item => pickPaths(item, subPaths)).filter(v => v != null);
+    } else if (value != null && typeof value === 'object') {
+      const sub = pickPaths(value, subPaths);
+      if (sub != null && Object.keys(sub).length > 0) result[key] = sub;
+    } else {
+      result[key] = value;
+    }
+  }
+
+  return Object.keys(result).length > 0 ? result : undefined;
 }
 
 function escapeRegex(str) {
