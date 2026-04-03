@@ -292,12 +292,12 @@ To enable native confirmation prompts for skills with `confirm=true`, add to you
 ```json
 {
   "permissions": {
-    "mcp:corp:cgw_invoke_confirmed": "ask"
+    "mcp:<name>:cgw_invoke_confirmed": "ask"
   }
 }
 ```
 
-This makes OpenCode ask for approval in the terminal before executing confirmed skills.
+Replace `<name>` with the key you used in the `mcp` section (e.g. `corp`). This makes OpenCode ask for approval in the terminal before executing confirmed skills.
 
 ---
 

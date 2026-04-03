@@ -408,8 +408,9 @@ URL:        https://api.example.com/comments/{commentId}
 
 Для нативного подтверждения в OpenCode добавьте в `opencode.json`:
 ```json
-{ "permissions": { "mcp:corp:cgw_invoke_confirmed": "ask" } }
+{ "permissions": { "mcp:<name>:cgw_invoke_confirmed": "ask" } }
 ```
+Замените `<name>` на ключ из секции `mcp` в вашем `opencode.json`.
 
 **OTP fallback (если агент ошибочно вызвал cgw_invoke для скила с подтверждением):**
 

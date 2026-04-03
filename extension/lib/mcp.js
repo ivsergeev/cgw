@@ -74,7 +74,7 @@ function handleToolsList(id) {
     },
     {
       name: 'cgw_schema',
-      description: 'Get parameter details for a specific skill. Returns name, description, and typed parameters.',
+      description: 'Get skill details. Returns parameters, confirm flag (true/false), and the invoke tool to use (cgw_invoke or cgw_invoke_confirmed). Always call this before invoking a skill for the first time.',
       inputSchema: {
         type: 'object',
         properties: {

@@ -292,12 +292,12 @@ opencode
 ```json
 {
   "permissions": {
-    "mcp:corp:cgw_invoke_confirmed": "ask"
+    "mcp:<name>:cgw_invoke_confirmed": "ask"
   }
 }
 ```
 
-OpenCode будет спрашивать подтверждение в терминале перед выполнением подтверждаемых скилов.
+Замените `<name>` на ключ из секции `mcp` (напр. `corp`). OpenCode будет спрашивать подтверждение в терминале перед выполнением подтверждаемых скилов.
 
 ---
 

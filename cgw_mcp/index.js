@@ -32,16 +32,21 @@ const MAX_LOG_FILES = 7; // keep last 7 days
 
 const DEFAULT_INSTRUCTIONS = `Corporate API gateway for accessing internal corporate systems.
 
+IMPORTANT: There are two invoke tools:
+- cgw_invoke — for regular skills (confirm=false)
+- cgw_invoke_confirmed — for skills that require confirmation (confirm=true)
+Always call cgw_schema first to check the "confirm" flag and "invoke" field, then use the correct tool.
+
 Workflow:
-1. Call cgw_groups to see available groups
-2. Call cgw_list (optionally with group filter) to see skills
-3. Call cgw_schema if you need parameter details
-4. Call cgw_invoke to execute a skill
+1. cgw_groups — discover available groups
+2. cgw_list — see skills in a group
+3. cgw_schema — get parameters, confirm flag, and which invoke tool to use
+4. cgw_invoke or cgw_invoke_confirmed — execute the skill
 
 Rules:
 - Only call skills from cgw_list. Never guess skill names.
-- Always call cgw_invoke for fresh data; do not cache results.
-- Check cgw_schema for the confirm flag. Use cgw_invoke_confirmed for skills with confirm=true, cgw_invoke for others.`;
+- Always call cgw_schema before first invoke of a skill to check confirm flag.
+- Never use cgw_invoke for skills with confirm=true — use cgw_invoke_confirmed.`;
 
 // ── CLI ────────────────────────────────────────────────────
 

@@ -408,8 +408,9 @@ When a skill has `confirm: true`, the agent should use `cgw_invoke_confirmed` in
 
 To enable native prompts in OpenCode, add to `opencode.json`:
 ```json
-{ "permissions": { "mcp:corp:cgw_invoke_confirmed": "ask" } }
+{ "permissions": { "mcp:<name>:cgw_invoke_confirmed": "ask" } }
 ```
+Replace `<name>` with the key from the `mcp` section in your `opencode.json`.
 
 **OTP fallback (if agent mistakenly uses cgw_invoke for a confirmed skill):**
 
