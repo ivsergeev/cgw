@@ -91,6 +91,8 @@
   "confirmInvalid": { "message": "Invalid confirmation code. Check the code in the browser notification and try again." },
   "optSkillConfirm": { "message": "Require confirmation" },
   "optSkillConfirmHint": { "message": "When enabled, the user must enter a one-time code to execute this skill" },
-  "optOtpFallback": { "message": "OTP fallback for confirmed skills" },
-  "optOtpFallbackHint": { "message": "When enabled, cgw_invoke shows a one-time code via notification instead of blocking. Enable if your agent does not support tool permissions." }
+  "optConfirmMode": { "message": "Confirmation mode" },
+  "optConfirmModeNative": { "message": "Native (agent permissions)" },
+  "optConfirmModeOtp": { "message": "OTP (code via notification)" },
+  "optConfirmModeHint": { "message": "Native: agent uses cgw_invoke_confirmed, requires permission config. OTP: one-time code via notification, works with any agent." }
 }

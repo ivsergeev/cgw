@@ -183,7 +183,9 @@ Skills marked with `confirm: true` require the agent to use `cgw_invoke_confirme
 
 **Default behavior:** If the agent uses `cgw_invoke` for a confirmed skill, the extension blocks with an error: "Use cgw_invoke_confirmed".
 
-**OTP fallback (optional):** Can be enabled in extension settings. When enabled, `cgw_invoke` for confirmed skills triggers a 4-digit OTP code via OS notification instead of blocking. The code is cryptographically random, valid for 60 seconds, one-time use, and bound to the specific skill + parameters via SHA-256 hash.
+**Two confirmation modes** (configured in extension settings):
+- **Native:** Agent uses `cgw_invoke_confirmed` tool, client shows native prompt. Requires agent permission config.
+- **OTP:** `cgw_invoke_confirmed` hidden, confirmed skills use a 4-digit code via OS notification. Code is cryptographically random, valid 60 seconds, one-time use, bound to skill + parameters via SHA-256 hash.
 
 **What this prevents:**
 - Prompt injection causing unintended operations
@@ -243,7 +245,7 @@ Skills, groups, and extension config are stored in `chrome.storage.local`, which
 | Connection stability | 60-second timeouts + max 100 concurrent requests |
 | Internal network access | URL validation blocks private IPs and non-HTTP protocols |
 | Request injection | CRLF check in headers + JSON validation in body |
-| Destructive operations | Dual: `cgw_invoke_confirmed` (native client prompt) + OTP fallback |
+| Destructive operations | Two modes: native (cgw_invoke_confirmed + agent permissions) or OTP (code via notification) |
 | Skill import | Protocol, method, parameter type and count validation |
 | Message origin | Sender validation — only extension pages can send commands |
 | Config file | Restricted file permissions (0600 on Unix) |

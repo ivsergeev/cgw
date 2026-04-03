@@ -411,11 +411,12 @@ async function openSettings() {
       ${esc(t('optTokenAgentHint'))} <code style="background:#e5e7eb;padding:2px 4px;border-radius:4px">~/.corpgateway/cgw_mcp.json</code>
     </div>
 
-    <label style="display:flex;align-items:center;gap:8px;margin:12px 0">
-      <input type="checkbox" id="cfgOtpFallback" ${config.otpFallback === true ? 'checked' : ''}>
-      <span style="font-size:13px">${esc(t('optOtpFallback'))}</span>
-    </label>
-    <div class="hint">${esc(t('optOtpFallbackHint'))}</div>
+    <label>${esc(t('optConfirmMode'))}</label>
+    <select id="cfgConfirmMode" style="margin-bottom:4px">
+      <option value="native" ${config.confirmMode !== 'otp' ? 'selected' : ''}>${esc(t('optConfirmModeNative'))}</option>
+      <option value="otp" ${config.confirmMode === 'otp' ? 'selected' : ''}>${esc(t('optConfirmModeOtp'))}</option>
+    </select>
+    <div class="hint">${esc(t('optConfirmModeHint'))}</div>
 
     <div class="flex" style="margin-top:16px">
       <button class="btn btn-primary" id="cfgSave">${esc(t('optSave'))}</button>
@@ -436,7 +437,7 @@ async function openSettings() {
     c.instanceName = pc.querySelector('#cfgName').value.trim();
     c.bridgeUrl = pc.querySelector('#cfgBridgeUrl').value.trim();
     c.extensionToken = pc.querySelector('#cfgExtToken').value.trim();
-    c.otpFallback = pc.querySelector('#cfgOtpFallback').checked;
+    c.confirmMode = pc.querySelector('#cfgConfirmMode').value;
     await setConfig(c);
     chrome.runtime.sendMessage({ type: 'configUpdated' }, (status) => {
       // configUpdated handler returns { ok: true }

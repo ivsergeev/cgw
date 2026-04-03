@@ -91,6 +91,8 @@
   "confirmInvalid": { "message": "Неверный код подтверждения. Проверьте код в уведомлении браузера." },
   "optSkillConfirm": { "message": "Требовать подтверждение" },
   "optSkillConfirmHint": { "message": "При включении пользователь должен ввести одноразовый код для выполнения скила" },
-  "optOtpFallback": { "message": "OTP-fallback для подтверждаемых скилов" },
-  "optOtpFallbackHint": { "message": "При включении cgw_invoke показывает одноразовый код через уведомление вместо блокировки. Включите, если ваш агент не поддерживает tool permissions." }
+  "optConfirmMode": { "message": "Режим подтверждения" },
+  "optConfirmModeNative": { "message": "Нативный (permissions агента)" },
+  "optConfirmModeOtp": { "message": "OTP (код через уведомление)" },
+  "optConfirmModeHint": { "message": "Нативный: агент использует cgw_invoke_confirmed, требует настройку permissions. OTP: одноразовый код через уведомление, работает с любым агентом." }
 }

@@ -29,7 +29,7 @@ export async function handleMcpRequest(request) {
     case 'initialize':
       return handleInitialize(id);
     case 'tools/list':
-      return handleToolsList(id);
+      return await handleToolsList(id);
     case 'tools/call':
       return await handleToolsCall(id, params);
     case 'ping':
@@ -54,7 +54,8 @@ function handleInitialize(id) {
 
 // ── tools/list ──────────────────────────────────────────────
 
-function handleToolsList(id) {
+async function handleToolsList(id) {
+  const config = await getConfig();
   const tools = [
     {
       name: 'cgw_groups',
@@ -85,18 +86,20 @@ function handleToolsList(id) {
     },
     {
       name: 'cgw_invoke',
-      description: 'Call a corporate skill. Only for skills where confirm=false in cgw_schema. If confirm=true, you must use cgw_invoke_confirmed instead — cgw_invoke will be blocked.',
+      description: config.confirmMode === 'otp'
+        ? 'Call a corporate skill. Skills with confirm=true require a confirmation code — a 4-digit code will be shown to the user via browser notification. Ask the user for the code or to cancel, then call again with confirmCode.'
+        : 'Call a corporate skill. Only for skills where confirm=false in cgw_schema. If confirm=true, use cgw_invoke_confirmed instead.',
       inputSchema: {
         type: 'object',
         properties: {
           skill: { type: 'string', description: 'Skill name.' },
           params: { type: 'object', description: 'Key-value parameters. All values as strings.', additionalProperties: { type: 'string' } },
-          confirmCode: { type: 'string', description: 'OTP code (only for fallback confirmation flow).' }
+          ...(config.confirmMode === 'otp' ? { confirmCode: { type: 'string', description: 'OTP confirmation code from the user.' } } : {})
         },
         required: ['skill']
       }
     },
-    {
+    ...(config.confirmMode === 'native' ? [{
       name: 'cgw_invoke_confirmed',
       description: 'Call a corporate skill that requires confirmation (confirm=true in cgw_schema). Use this instead of cgw_invoke when the skill has confirm=true.',
       inputSchema: {
@@ -107,7 +110,7 @@ function handleToolsList(id) {
         },
         required: ['skill']
       }
-    },
+    }] : []),
   ];
   return jsonRpcResult(id, { tools });
 }
@@ -181,11 +184,13 @@ async function callSchema(args) {
   const skill = skills.find(s => s.name.toLowerCase() === skillName.toLowerCase());
   if (!skill) throw new Error(`Skill not found: ${skillName}`);
 
+  const config = await getConfig();
+  const isConfirmed = skill.confirm === true;
   return JSON.stringify({
     name: skill.name,
     description: skill.description,
-    confirm: skill.confirm === true,
-    invoke: skill.confirm === true ? 'cgw_invoke_confirmed' : 'cgw_invoke',
+    confirm: isConfirmed,
+    invoke: (isConfirmed && config.confirmMode === 'native') ? 'cgw_invoke_confirmed' : 'cgw_invoke',
     parameters: (skill.parameters || []).map(p => ({
       name: p.name,
       type: (p.type || 'String').toLowerCase(),
@@ -263,10 +268,9 @@ async function callInvoke(args, confirmedTool = false) {
   // If skill requires confirmation AND agent used cgw_invoke (not cgw_invoke_confirmed):
   //   - otpFallback=false (default): hard block — agent must use cgw_invoke_confirmed
   //   - otpFallback=true: OTP flow via OS notification
-  console.log(`[CGW] invoke: skill=${skillName}, confirm=${skill.confirm}, confirmedTool=${confirmedTool}`);
   if (needsConfirmation(skill) && !confirmedTool) {
     const config = await getConfig();
-    if (!config.otpFallback) {
+    if (config.confirmMode !== 'otp') {
       throw new Error(`Skill "${skillName}" requires confirmation. Use cgw_invoke_confirmed instead of cgw_invoke.`);
     }
     // Cleanup expired entries

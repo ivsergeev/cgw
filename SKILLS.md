@@ -414,9 +414,12 @@ To enable confirmation prompts in OpenCode, add `"tools"` to your `opencode.json
 ```
 Replace `<name>` with the MCP server key from your `opencode.json` (e.g. `corp`).
 
-### OTP fallback (optional)
+### Confirmation modes
 
-If your agent doesn't support tool permissions, you can enable OTP fallback in extension settings (⚙ Settings → **"OTP fallback for confirmed skills"**). When enabled, `cgw_invoke` for confirmed skills triggers a 4-digit code via OS notification instead of blocking.
+In extension settings (⚙ Settings → **Confirmation mode**):
+
+- **Native** (default) — `cgw_invoke_confirmed` tool is available, agent uses it for confirmed skills. Requires `permission` config in the agent (e.g. OpenCode).
+- **OTP** — `cgw_invoke_confirmed` is hidden, confirmed skills use a 4-digit code via OS notification. Works with any agent without configuration.
 
 ### Configuring per skill
 

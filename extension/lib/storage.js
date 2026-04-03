@@ -8,7 +8,7 @@ const DEFAULT_CONFIG = {
   bridgeUrl: 'http://localhost:9877',
   extensionToken: '',
   instanceName: '',  // e.g. "Chrome Work", "Chrome Personal"
-  otpFallback: false  // if true, cgw_invoke uses OTP code flow for confirmed skills instead of blocking
+  confirmMode: 'native'  // 'native' = cgw_invoke_confirmed (agent permissions), 'otp' = OTP code via notification
 };
 
 // ── Store access ─────────────────────────────────────────────
