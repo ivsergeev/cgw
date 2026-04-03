@@ -6,7 +6,7 @@ Chrome-расширение + MCP-сервер для подключения AI-
 
 > **[Руководство по установке](SETUP.ru.md)** | **[Создание скилов](SKILLS.ru.md)**
 
-![CorpGateway Extension](images/Image.png)
+![CorpGateway Extension](images/CorpGatewayExtension.png)
 
 ## Как это работает
 
@@ -104,6 +104,8 @@ node index.js
 
 ### 5. Подключить AI-агента
 
+![OpenCode + CorpGateway](images/CorpGatewayOpencode.png)
+
 Добавьте в конфиг агента (`opencode.json`, `.cursor/mcp.json` и т.д.):
 
 ```json
@@ -145,6 +147,8 @@ node index.js
 ## Настройка скилов
 
 > **Подробное руководство:** [Создание кастомных скилов](SKILLS.ru.md) ([English](../SKILLS.md))
+
+![Skill Editor](images/CorpGatewayExtensionSettings.png)
 
 ### Через UI расширения
 

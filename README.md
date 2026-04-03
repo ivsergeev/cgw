@@ -6,7 +6,7 @@ Chrome extension + MCP server for connecting AI agents to corporate systems via 
 
 > **[Installation Guide](SETUP.md)** | **[Creating Custom Skills](SKILLS.md)**
 
-![CorpGateway Extension](docs/images/Image.png)
+![CorpGateway Extension](docs/images/CorpGatewayExtension.png)
 
 ## How It Works
 
@@ -104,6 +104,8 @@ On first run, a config file is created at `~/.corpgateway/cgw_mcp.json`:
 
 ### 5. Connect the AI agent
 
+![OpenCode + CorpGateway](docs/images/CorpGatewayOpencode.png)
+
 Add to your agent config (`opencode.json`, `.cursor/mcp.json`, etc.):
 
 ```json
@@ -145,6 +147,8 @@ The agent receives 6 meta-tools:
 ## Skill Configuration
 
 > **Detailed guide:** [Creating Custom Skills](SKILLS.md) ([Русский](docs/SKILLS.ru.md))
+
+![Skill Editor](docs/images/CorpGatewayExtensionSettings.png)
 
 ### Via extension UI
 
