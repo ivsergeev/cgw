@@ -227,7 +227,7 @@ In the extension popup or settings sidebar, each group has a toggle. Disabled gr
 
 ### Operation confirmation
 
-Skills can require a one-time confirmation code before execution. When enabled, the extension shows a 4-digit code via an OS notification — the user tells the code to the agent, and the agent retries the call with the code.
+Skills can require confirmation before execution. When a skill has `confirm: true`, the agent must use `cgw_invoke_confirmed` instead of `cgw_invoke`. The agent's client (e.g. OpenCode) will show a native confirmation prompt.
 
 To enable: open a skill in the editor → check **"Require confirmation"**. See [Creating Custom Skills](SKILLS.md#operation-confirmation) for details.
 
@@ -249,9 +249,14 @@ Create or edit `opencode.json` in your project root:
         "Authorization": "Bearer <TOKEN>"
       }
     }
+  },
+  "permissions": {
+    "<name>_cgw_invoke_confirmed": "ask"
   }
 }
 ```
+
+Replace `<name>` with the key from the `mcp` section (e.g. `corp`). The `permissions` section makes OpenCode ask for approval before executing confirmed skills.
 
 Replace `<TOKEN>` with the `token` value from `~/.corpgateway/cgw_mcp.json`.
 
@@ -286,18 +291,6 @@ opencode
 ```
 
 On startup, OpenCode will automatically connect to cgw_mcp and receive the available tools: `cgw_groups`, `cgw_list`, `cgw_schema`, `cgw_invoke`, `cgw_invoke_confirmed`.
-
-To enable native confirmation prompts for skills with `confirm=true`, add to your `opencode.json`:
-
-```json
-{
-  "permissions": {
-    "mcp:<name>:cgw_invoke_confirmed": "ask"
-  }
-}
-```
-
-Replace `<name>` with the key you used in the `mcp` section (e.g. `corp`). This makes OpenCode ask for approval in the terminal before executing confirmed skills.
 
 ---
 

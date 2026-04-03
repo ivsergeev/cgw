@@ -2,7 +2,7 @@
 // 5 meta-tools: cgw_groups, cgw_list, cgw_schema, cgw_invoke, cgw_health
 
 import {
-  getEnabledGroups, getEnabledSkills, getSkillByName, getGroups
+  getEnabledGroups, getEnabledSkills, getSkillByName, getGroups, getConfig
 } from './storage.js';
 import { invokeSkill } from './executor.js';
 
@@ -260,10 +260,14 @@ async function callInvoke(args, confirmedTool = false) {
   delete params.confirmCode;
 
   // ── Confirmation gate ──
-  // If skill requires confirmation AND agent used cgw_invoke (not cgw_invoke_confirmed),
-  // fall back to OTP flow. If agent used cgw_invoke_confirmed, skip OTP — the client
-  // (OpenCode) already asked the user for permission.
+  // If skill requires confirmation AND agent used cgw_invoke (not cgw_invoke_confirmed):
+  //   - otpFallback=true (default): OTP flow via OS notification
+  //   - otpFallback=false: hard block — agent must use cgw_invoke_confirmed
   if (needsConfirmation(skill) && !confirmedTool) {
+    const config = await getConfig();
+    if (!config.otpFallback) {
+      throw new Error(`Skill "${skillName}" requires confirmation. Use cgw_invoke_confirmed instead of cgw_invoke.`);
+    }
     // Cleanup expired entries
     const now = Date.now();
     for (const [k, v] of pendingConfirmations) {

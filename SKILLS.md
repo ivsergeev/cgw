@@ -397,38 +397,30 @@ Skills can be configured to require confirmation before execution. This protects
 
 ### How it works
 
-When a skill has `confirm: true`, the agent should use `cgw_invoke_confirmed` instead of `cgw_invoke`. The `cgw_schema` response includes the `confirm` flag and the recommended `invoke` tool name.
+When a skill has `confirm: true`, the agent must use `cgw_invoke_confirmed` instead of `cgw_invoke`. The `cgw_schema` response includes the `confirm` flag and the recommended `invoke` tool name.
 
-**Primary flow (with OpenCode or agents that support permissions):**
+**Flow:**
 
 1. Agent calls `cgw_schema(skill)` → sees `confirm: true, invoke: "cgw_invoke_confirmed"`
 2. Agent calls `cgw_invoke_confirmed(skill, params)`
-3. OpenCode shows native confirmation prompt in the terminal
+3. The client (e.g. OpenCode) shows a native confirmation prompt
 4. User approves → skill executes
 
-To enable native prompts in OpenCode, add to `opencode.json`:
+If the agent mistakenly uses `cgw_invoke` for a confirmed skill, the extension blocks the call with an error: *"Use cgw_invoke_confirmed"*.
+
+To enable confirmation prompts in OpenCode, add `"tools"` to your `opencode.json`:
 ```json
-{ "permissions": { "mcp:<name>:cgw_invoke_confirmed": "ask" } }
+{ "permissions": { "<name>_cgw_invoke_confirmed": "ask" } }
 ```
-Replace `<name>` with the key from the `mcp` section in your `opencode.json`.
+Replace `<name>` with the MCP server key from your `opencode.json` (e.g. `corp`).
 
-**OTP fallback (if agent mistakenly uses cgw_invoke for a confirmed skill):**
+### OTP fallback (optional)
 
-1. Agent calls `cgw_invoke(skill, params)` for a skill with `confirm: true`
-2. Extension generates a 4-digit code, shows it via OS notification
-3. Extension returns "confirmation required — ask user for the code"
-4. Agent asks user for the code, calls again with `confirmCode`
-5. Extension validates the code and executes
+If your agent doesn't support tool permissions, you can enable OTP fallback in extension settings (⚙ Settings → **"OTP fallback for confirmed skills"**). When enabled, `cgw_invoke` for confirmed skills triggers a 4-digit code via OS notification instead of blocking.
 
 ### Configuring per skill
 
 In the skill editor, use the **"Require confirmation"** checkbox:
 - **Checked** — the skill requires confirmation before execution
 - **Unchecked** (default) — the skill executes immediately
-
-### OTP code properties
-
-- 4 random digits (0000–9999)
-- Valid for **60 seconds**
-- One-time use — consumed after successful validation
 - If the code expires or is invalid, a **new code** is automatically generated and sent

@@ -411,6 +411,12 @@ async function openSettings() {
       ${esc(t('optTokenAgentHint'))} <code style="background:#e5e7eb;padding:2px 4px;border-radius:4px">~/.corpgateway/cgw_mcp.json</code>
     </div>
 
+    <label style="display:flex;align-items:center;gap:8px;margin:12px 0">
+      <input type="checkbox" id="cfgOtpFallback" ${config.otpFallback === true ? 'checked' : ''}>
+      <span style="font-size:13px">${esc(t('optOtpFallback'))}</span>
+    </label>
+    <div class="hint">${esc(t('optOtpFallbackHint'))}</div>
+
     <div class="flex" style="margin-top:16px">
       <button class="btn btn-primary" id="cfgSave">${esc(t('optSave'))}</button>
       <button class="btn btn-ghost" id="cfgClose">${esc(t('optClose'))}</button>
@@ -430,6 +436,7 @@ async function openSettings() {
     c.instanceName = pc.querySelector('#cfgName').value.trim();
     c.bridgeUrl = pc.querySelector('#cfgBridgeUrl').value.trim();
     c.extensionToken = pc.querySelector('#cfgExtToken').value.trim();
+    c.otpFallback = pc.querySelector('#cfgOtpFallback').checked;
     await setConfig(c);
     chrome.runtime.sendMessage({ type: 'configUpdated' }, (status) => {
       // configUpdated handler returns { ok: true }

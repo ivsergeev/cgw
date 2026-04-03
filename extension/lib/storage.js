@@ -7,7 +7,8 @@ const CONFIG_KEY = 'cgw_config';
 const DEFAULT_CONFIG = {
   bridgeUrl: 'http://localhost:9877',
   extensionToken: '',
-  instanceName: ''  // e.g. "Chrome Work", "Chrome Personal"
+  instanceName: '',  // e.g. "Chrome Work", "Chrome Personal"
+  otpFallback: false  // if true, cgw_invoke uses OTP code flow for confirmed skills instead of blocking
 };
 
 // ── Store access ─────────────────────────────────────────────

@@ -175,29 +175,18 @@ Imported preset files are validated before storage:
 - Parameter types must be: `String`, `Integer`, `Float`, `Boolean`, `Date`
 - Duplicate skills/groups are skipped (case-insensitive name matching)
 
-### Operation Confirmation (OTP)
+### Operation Confirmation
 
-Skills marked with `confirm: true` require a one-time confirmation code before execution.
+Skills marked with `confirm: true` require the agent to use `cgw_invoke_confirmed` instead of `cgw_invoke`. The `cgw_schema` response tells the agent which tool to use.
 
-**Flow:**
-1. Agent calls `cgw_invoke(skill, params)`
-2. Extension generates a 4-digit code (cryptographically random)
-3. Code is shown to the user via OS notification
-4. Extension returns "confirmation required" to the agent
-5. Agent asks user for the code
-6. Agent calls `cgw_invoke(skill, params, confirmCode)`
-7. Extension validates the code and executes
+**Primary flow:** Agent calls `cgw_invoke_confirmed` → client (e.g. OpenCode) shows native confirmation prompt → user approves → executes.
 
-**Properties:**
-- Code is 4 random digits (0000–9999), generated with `crypto.getRandomValues()`
-- Valid for 60 seconds, then auto-expires
-- One-time use — consumed after successful validation
-- Bound to specific skill + parameters (SHA-256 hash of skill name and sorted params)
-- Code exists only in the OS notification — the agent cannot see it
-- `confirmCode` is excluded from parameter hashing (prevents hash mismatch between first and second call)
+**Default behavior:** If the agent uses `cgw_invoke` for a confirmed skill, the extension blocks with an error: "Use cgw_invoke_confirmed".
+
+**OTP fallback (optional):** Can be enabled in extension settings. When enabled, `cgw_invoke` for confirmed skills triggers a 4-digit OTP code via OS notification instead of blocking. The code is cryptographically random, valid for 60 seconds, one-time use, and bound to the specific skill + parameters via SHA-256 hash.
 
 **What this prevents:**
-- Prompt injection causing unintended write operations
+- Prompt injection causing unintended operations
 - Agent autonomously executing destructive actions without user awareness
 
 ### Auth Failure Notification

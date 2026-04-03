@@ -90,5 +90,7 @@
   "confirmExpired": { "message": "Confirmation code expired. A new code has been sent to the user." },
   "confirmInvalid": { "message": "Invalid confirmation code. Check the code in the browser notification and try again." },
   "optSkillConfirm": { "message": "Require confirmation" },
-  "optSkillConfirmHint": { "message": "When enabled, the user must enter a one-time code to execute this skill" }
+  "optSkillConfirmHint": { "message": "When enabled, the user must enter a one-time code to execute this skill" },
+  "optOtpFallback": { "message": "OTP fallback for confirmed skills" },
+  "optOtpFallbackHint": { "message": "When off, cgw_invoke blocks confirmed skills instead of OTP code flow. Use when your agent supports tool permissions." }
 }
